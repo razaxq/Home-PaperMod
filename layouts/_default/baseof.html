@@ -3,7 +3,7 @@
 {{- end -}}
 
 <!DOCTYPE html>
-<html lang="{{ site.Language }}" dir="{{ .Language.LanguageDirection | default "auto" }}">
+<html lang="{{ .Language.Locale | default site.Language.Lang }}" {{ with .Language.Direction }}dir="{{ . }}"{{ end }}>
 
 <head>
     {{- partial "head.html" . }}

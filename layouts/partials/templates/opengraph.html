@@ -1,25 +1,25 @@
-<meta property="og:url" content="{{ .Permalink }}">
+<meta content="{{ .Permalink }}" property="og:url">
 
 {{- with or site.Title site.Params.title | plainify }}
-  <meta property="og:site_name" content="{{ . }}">
+  <meta content="{{ . }}" property="og:site_name">
 {{- end }}
 
 {{- with or .Title site.Title site.Params.title | plainify }}
-  <meta property="og:title" content="{{ . }}">
+  <meta content="{{ . }}" property="og:title">
 {{- end }}
 
 {{- with or .Description .Summary site.Params.description | plainify | htmlUnescape | chomp }}
-  <meta property="og:description" content="{{ . }}">
+  <meta content="{{ . }}" property="og:description">
 {{- end }}
 
-{{- with or .Params.locale site.Language.LanguageCode site.Language.Lang }}
-  <meta property="og:locale" content="{{ . }}">
+{{- with or .Params.locale site.Language.Locale site.Language.Lang }}
+  <meta content="{{ . }}" property="og:locale">
 {{- end }}
 
 {{- if .IsPage }}
-  <meta property="og:type" content="article">
+  <meta content="article" property="og:type">
   {{- with .Section }}
-    <meta property="article:section" content="{{ . }}">
+    <meta content="{{ . }}" property="article:section">
   {{- end }}
   {{- $ISO8601 := "2006-01-02T15:04:05-07:00" }}
   {{- with .PublishDate }}
@@ -29,42 +29,42 @@
     <meta property="article:modified_time" {{ .Format $ISO8601 | printf "content=%q" | safeHTMLAttr }}>
   {{- end }}
   {{- range .GetTerms "tags" | first 6 }}
-    <meta property="article:tag" content="{{ .Page.Title | plainify }}">
+    <meta content="{{ .Page.Title | plainify }}" property="article:tag">
   {{- end }}
 {{- else }}
-  <meta property="og:type" content="website">
+  <meta content="website" property="og:type">
 {{- end }}
 
 {{- if .Params.cover.image -}}
   {{- if (ne .Params.cover.relative true) }}
-    <meta property="og:image" content="{{ .Params.cover.image | absURL }}">
+    <meta content="{{ .Params.cover.image | absURL }}" property="og:image">
   {{- else}}
-    <meta property="og:image" content="{{ (path.Join .RelPermalink .Params.cover.image ) | absURL }}">
+    <meta content="{{ (path.Join .RelPermalink .Params.cover.image ) | absURL }}" property="og:image">
   {{- end}}
 {{- else }}
   {{- with partial "_funcs/get-page-images" . }}
     {{- range . | first 6 }}
-      <meta property="og:image" content="{{ .Permalink }}">
+      <meta content="{{ .Permalink }}" property="og:image">
     {{- end }}
   {{- end }}
 {{- end }}
 
 {{- with .Params.audio }}
   {{- range . | first 6  }}
-    <meta property="og:audio" content="{{ . | absURL }}">
+    <meta content="{{ . | absURL }}" property="og:audio">
   {{- end }}
 {{- end }}
 
 {{- with .Params.videos }}
   {{- range . | first 6 }}
-    <meta property="og:video" content="{{ . | absURL }}">
+    <meta content="{{ . | absURL }}" property="og:video">
   {{- end }}
 {{- end }}
 
 {{- range .GetTerms "series" }}
   {{- range .Pages | first 7 }}
     {{- if ne $ . }}
-      <meta property="og:see_also" content="{{ .Permalink }}">
+      <meta content="{{ .Permalink }}" property="og:see_also">
     {{- end }}
   {{- end }}
 {{- end }}
@@ -72,15 +72,15 @@
 {{- with site.Params.social }}
   {{- if reflect.IsMap . }}
     {{- with .facebook_app_id }}
-      <meta property="fb:app_id" content="{{ . }}">
+      <meta content="{{ . }}" property="fb:app_id">
     {{- else }}
       {{- with .facebook_admin }}
-        <meta property="fb:admins" content="{{ . }}">
+        <meta content="{{ . }}" property="fb:admins">
       {{- end }}
     {{- end }}
   {{- end }}
 {{- end }}
 
 {{- with (.Param "social.fediverse_creator") }}
-  <meta name="fediverse:creator" content="{{ . }}">
+  <meta content="{{ . }}" name="fediverse:creator">
 {{- end }}
