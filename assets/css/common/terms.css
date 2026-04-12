@@ -7,7 +7,7 @@
 .terms-tags a {
     display: block;
     padding: 3px 10px;
-    background: var(--tertiary);
+    background: var(--entry);
     border-radius: 6px;
     transition: .25s cubic-bezier(0,.5,.5,1);
 }
