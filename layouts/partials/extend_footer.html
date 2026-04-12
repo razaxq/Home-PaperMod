@@ -68,7 +68,7 @@
                         });
 
                         // 立即加载元素标记
-                        ['.archive-year-header', '.archive-month-header'].forEach(selector => {
+                        ['.archive-year', '.archive-year-header', '.archive-month', '.archive-month-header'].forEach(selector => {
                             document.querySelectorAll(selector).forEach(element => {
                                 const item = elementsRegistry.find(i => i.element === element);
                                 if (item) item.isImmediate = true;
@@ -160,8 +160,8 @@
                     createSequentialObserver([
                         '.list > .main > *',
                         '#top > .main > *',
-                        '.archive-year-header',
-                        '.archive-month-header',
+                        '.archive-year',
+                        '.archive-month',
                         '.archive-posts > *',
                         '.post > *'
                     ], 70);

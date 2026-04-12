@@ -6,30 +6,44 @@
 
 .archive-year {
     margin-top: 40px;
-    transition: transform .85s cubic-bezier(0, .6, .6, 1), filter .85s cubic-bezier(0, .5, 1, 1)!important;
+    -webkit-filter: blur(5px) opacity(0);
+    filter: brightness(1) contrast(1) blur(4px) opacity(0);
+    transform: translateY(60px);
+    transition: transform 1s cubic-bezier(0, 1.1, .6, 1), filter .85s cubic-bezier(0, 1.1, .6, 1);
 }
 
 .archive-year:not(:last-of-type) {
     border-bottom: 2px solid var(--border);
 }
 
+.archive-year.loaded {
+    -webkit-filter: blur(0) opacity(1);
+    filter: brightness(1) contrast(1) blur(0) opacity(1);
+    transform: translateY(0);
+}
+
 .archive-month {
     display: flex;
     align-items: flex-start;
     padding: 10px 0;
-    transition: inherit;
-}
-
-.archive-year-header {
     -webkit-filter: blur(5px) opacity(0);
-    filter: brightness(1) contrast(1) blur(5px) opacity(0);
+    filter: brightness(1) contrast(1) blur(4px) opacity(0);
     transform: translateY(60px);
-    transition: inherit;
+    transition: transform 1s cubic-bezier(0, 1.1, .6, 1), filter .85s cubic-bezier(0, 1.1, .6, 1);
 }
 
-.archive-year-header.loaded {
+.archive-month:not(:last-of-type) {
+    border-bottom: 1px solid var(--border);
+}
+
+.archive-month.loaded {
+    -webkit-filter: blur(0) opacity(1);
     filter: brightness(1) contrast(1) blur(0) opacity(1);
-    transform: translateY(0)
+    transform: translateY(0);
+}
+
+.archive-year.loaded .archive-year-header {
+    filter: brightness(1) contrast(1) blur(0) opacity(1);
 }
 
 .archive-month-header {
@@ -37,18 +51,13 @@
     width: 200px;
     -webkit-filter: blur(5px) opacity(0);
     filter: brightness(1) contrast(1) blur(5px) opacity(0);
-    transform: translateY(60px);
-    transition: inherit;
+    transition: filter .85s cubic-bezier(0, .5, 1, 1);
 }
 
-.archive-month-header.loaded {
+.archive-month.loaded .archive-month-header {
     filter: brightness(1) contrast(1) blur(0) opacity(1);
-    transform: translateY(0)
 }
 
-.archive-month:not(:last-of-type) {
-    border-bottom: 1px solid var(--border);
-}
 
 .archive-entry {
     position: relative;

@@ -87,12 +87,12 @@ strong {
 
 /* ========== 选中文字的背景颜色 ========== */
 ::selection {
-    background-color: #67c23ae0; /* 你想要的背景颜色 */
-    color: #000; /* 你想要的文字颜色 */
+    background-color: #67c23ae0;
+    color: #000;
 }
 
 a:hover {
-    color: #67c23a; /* 悬停时的字体颜色 */
+    color: #67c23a;
 }
 
 a {
@@ -292,6 +292,7 @@ body.dark .notice {
         transform: translateY(0);
     }
 
+
     /* .post-content>* {
       -webkit-filter: blur(5px) opacity(0);
       filter: brightness(1) contrast(1) blur(5px) opacity(0);
@@ -383,7 +384,7 @@ body.dark .notice {
     border-radius: var(--radius) var(--radius) 0 0;
     overflow: auto;
     user-select: none;
-    font-family: 'JetBrains Mono';
+    font-family: 'Maple Mono';
     font-size: smaller;
     font-weight: 400;
     display: flex;
@@ -416,9 +417,9 @@ body.dark .notice {
 }
 
 
-/* ========== 代码字体：JetBrains Mono ========== */
+/* ========== 代码字体：Maple Mono ========== */
 code {
-    font-family: 'JetBrains Mono', Monaco, Consolas, 'Courier New', monospace;
+    font-family: 'Maple Mono', Monaco, Consolas, 'Courier New', monospace;
 }
 
 /* ========= 文章和目录自动编号（从二级标题开始）============ */
