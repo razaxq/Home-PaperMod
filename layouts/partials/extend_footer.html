@@ -14,6 +14,7 @@
     </script>
 
 
+    {{ if ne .Layout "search" }}
     <script>
         if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
             (function () {
@@ -184,6 +185,7 @@
             })();
         }
     </script>
+    {{ end }}
 
     <!-- post-entry 点击消失 -->
     <div>
@@ -303,15 +305,15 @@
         </script>
     </div>
 
-    <!-- 图片点击放大 Fancybox -->
+    <!-- 图片点击放大 Fancybox（仅在当前页存在图片时加载） -->
+    {{ if .Page.Store.Get "hasFancybox" }}
     <div>
-        <!-- 使用CDN的CSS -->
         <link
-            href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css"
+            href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.41/dist/fancybox/fancybox.css"
             rel="stylesheet"
         />
         <script type="module">
-            import {Fancybox} from 'https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.esm.js';
+            import {Fancybox} from 'https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.41/dist/fancybox/fancybox.esm.js';
 
         // 确保在页面加载完成后初始化
         if (document.readyState === 'loading') {
@@ -345,3 +347,4 @@
         }
     </script>
 </div>
+    {{ end }}
