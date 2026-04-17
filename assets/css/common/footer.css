@@ -59,10 +59,6 @@
     color: var(--primary);
 }
 
-.top-link:hover{
-
-}
-
 .top-link:focus,
 #theme-toggle:focus {
     outline: 0;

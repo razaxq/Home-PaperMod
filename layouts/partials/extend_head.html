@@ -1,24 +1,10 @@
-<!-- /* ========== umami  ========== */ -->
-<!-- <script defer src="https://cloud.umami.is/script.js" data-website-id="68d10b96-557c-4632-846f-9865e613151c"></script> -->
-
 <!-- 预加载关键资源 -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="dns-prefetch" href="//cdn.jsdelivr.net">
-<!--<link rel="preconnect" href="https://fonts.googleapis.com">-->
-<!--<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>-->
-<!--<link rel="preload stylesheet"-->
-<!--      href="https://cdn.jsdelivr.net/npm/jetbrains-mono@1.0.6/css/jetbrains-mono.min.css"/>-->
-<!--<link rel="preload stylesheet"-->
-<!--      href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/lxgwwenkai-bold.min.css"/>-->
-<!--<link rel="preload stylesheet"-->
-<!--      href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/lxgwwenkai-light.min.css"/>-->
-<!--<link rel="preload stylesheet"-->
-<!--      href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/lxgwwenkai-regular.min.css"/>-->
+
 <!-- 文章字体设置 Fonts -->
-<!-- <script src="/assets/Fonts/webfont.js"></script>-->
 <script src="https://cdn.jsdelivr.net/npm/webfontloader@1.6.28/webfontloader.min.js"></script>
 <script>
-    // 文章字体设置 Fonts（带失败回退）
     (function() {
         const fontCSSUrls = [
             'https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/lxgwwenkai-bold.min.css',
@@ -56,44 +42,4 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/lxgwwenkai-regular.min.css">
     <link href="https://cdn.jsdelivr.net/npm/@fontsource/maple-mono/index.min.css" rel="stylesheet">
 </noscript>
-
-
-<!--<style>-->
-<!--    /* ========== transition-image ========== */-->
-<!--    #progress-bar {-->
-<!--        position: fixed;-->
-<!--        top: 0;-->
-<!--        left: 0;-->
-<!--        width: 0;-->
-<!--        height: 1px;-->
-<!--        background: linear-gradient(to right, red, orange, yellow, green, blue, indigo);-->
-<!--        z-index: 9000;-->
-<!--        transition: .45s cubic-bezier(0, .5, .5, 1) !important;-->
-<!--    }-->
-<!--</style>-->
-<!--<script>-->
-<!--    document.addEventListener('DOMContentLoaded', function () {-->
-<!--        // 监听post-header的loaded类变化-->
-<!--        const postHeader = document.querySelector('.post-header');-->
-<!--        if (postHeader) {-->
-<!--            const observer = new MutationObserver(function (mutations) {-->
-<!--                mutations.forEach(function (mutation) {-->
-<!--                    if (mutation.type === 'attributes' && mutation.attributeName === 'class') {-->
-<!--                        if (postHeader.classList.contains('loaded')) {-->
-<!--                            // 当post-header有loaded类时,为postcontent添加loaded类-->
-<!--                            const postContent = document.querySelector('.post-content');-->
-<!--                            if (postContent) {-->
-<!--                                postContent.classList.add('loaded');-->
-<!--                            }-->
-<!--                        }-->
-<!--                    }-->
-<!--                });-->
-<!--            });-->
-
-<!--            observer.observe(postHeader, {-->
-<!--                attributes: true-->
-<!--            });-->
-<!--        }-->
-<!--    });-->
-<!--</script>-->
 {{- /* Head custom content area end */ -}}

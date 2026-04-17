@@ -156,10 +156,6 @@ body.dark .notice {
     background: var(--root-background)
 }
 
-.notice p {
-
-}
-
 .notice p:last-child {
     margin-bottom: 0
 }

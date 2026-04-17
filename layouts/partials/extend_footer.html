@@ -14,13 +14,6 @@
     </script>
 
 
-    <!-- 不蒜子 -->
-    {{- if .Site.Params.busuanzi -}}
-    <!-- <script defer src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
-    <meta name="referrer" content="no-referrer-when-downgrade"> -->
-    {{- end -}}
-
-
     <script>
         if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
             (function () {
@@ -165,27 +158,6 @@
                         '.archive-posts > *',
                         '.post > *'
                     ], 70);
-
-                    // // 使用 MutationObserver 监听 id="twikoo" 的元素加载
-                    // const twikooObserver = new MutationObserver((mutations, observer) => {
-                    //     const twikooElement = document.getElementById('twikoo');
-                    //     if (twikooElement) {
-                    //         twikooElement.classList.add('loaded');
-                    //         observer.disconnect(); // 停止观察
-                    //     }
-                    // });
-                    //
-                    // // 监听整个文档的变化
-                    // twikooObserver.observe(document.documentElement, {
-                    //     childList: true,
-                    //     subtree: true
-                    // });
-                    //
-                    // // 安全后备：如果元素已经存在，直接添加类
-                    // const twikooElement = document.getElementById('twikoo');
-                    // if (twikooElement) {
-                    //     twikooElement.classList.add('loaded');
-                    // }
                 }
 
                 // 启动检测

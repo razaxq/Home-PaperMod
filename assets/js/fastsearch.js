@@ -42,10 +42,9 @@ window.addEventListener('load', function () {
                         }
                     }
                     fuse = new Fuse(data, options); // build the index from the json file
-                    console.log(fuse);
                 }
             } else {
-                console.log(xhr.responseText);
+                console.error('Search index load failed:', xhr.status, xhr.statusText);
             }
         }
     };
