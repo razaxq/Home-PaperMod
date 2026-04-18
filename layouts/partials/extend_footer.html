@@ -303,16 +303,24 @@
         </script>
     </div>
 
-    <!-- Fancybox（运行时按需加载：检测到 [data-fancybox] 元素才注入 CSS/JS） -->
-    <script type="module">
-        if (document.querySelector('[data-fancybox]')) {
-            const css = document.createElement('link');
-            css.rel = 'stylesheet';
-            css.href = 'https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.41/dist/fancybox/fancybox.css';
-            document.head.appendChild(css);
+    <!-- 图片点击放大 Fancybox -->
+    <div>
+        <!-- 使用CDN的CSS -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css"
+            rel="stylesheet"
+        />
+        <script type="module">
+            import {Fancybox} from 'https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.esm.js';
 
-            const {Fancybox} = await import('https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.41/dist/fancybox/fancybox.esm.js');
+        // 确保在页面加载完成后初始化
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initFancybox);
+        } else {
+            initFancybox();
+        }
 
+        function initFancybox() {
             Fancybox.bind("[data-fancybox]", {
                 Carousel: {
                     transition: "slide",
@@ -336,3 +344,4 @@
             });
         }
     </script>
+</div>
