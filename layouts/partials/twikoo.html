@@ -1,5 +1,4 @@
 <div id="tcomment"></div>
-<link as="style" href="/assets/Twikoo/twikoo.min.css" onload="this.onload=null;this.rel='stylesheet'" rel="preload">
 <noscript>
     <link href="/assets/Twikoo/twikoo.min.css" rel="stylesheet">
 </noscript>
@@ -16,6 +15,13 @@
             });
         }
 
+        function loadStyle(href) {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = href;
+            document.head.appendChild(link);
+        }
+
         // 并行加载脚本和一言数据
         Promise.all([
             loadScript('/assets/Twikoo/twikoo.nocss.min.js'),
@@ -24,6 +30,7 @@
                 .then(d => d.hitokoto)
                 .catch(() => '')
         ]).then(([, hitokotoText]) => {
+            loadStyle('/assets/Twikoo/twikoo.min.css');
             // 初始化评论
             twikoo.init({
                 envId: "https://twikoo.dtft.net/",

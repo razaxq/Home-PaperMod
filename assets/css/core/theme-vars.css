@@ -18,6 +18,9 @@
     --code-block-bg: #0d1117;
     --code-bg: rgb(245, 245, 245);
     --border: rgb(238, 238, 238);
+    --accent: #67c23a;
+    --accent-hover: #6cee2b;
+    --selection-bg: #67c23ae0;
 }
 
 .dark {

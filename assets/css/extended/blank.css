@@ -13,7 +13,7 @@ Read https://github.com/adityatelange/hugo-PaperMod/wiki/FAQs#bundling-custom-cs
 
 strong {
     color: #5a5;
-    font-weight: 400;;
+    font-weight: 400;
 }
 
 .tk-nick, .tk-nick strong {
@@ -87,12 +87,12 @@ strong {
 
 /* ========== 选中文字的背景颜色 ========== */
 ::selection {
-    background-color: #67c23ae0;
+    background-color: var(--selection-bg);
     color: #000;
 }
 
 a:hover {
-    color: #67c23a;
+    color: var(--accent);
 }
 
 a {
@@ -112,7 +112,7 @@ a {
     --note-title: #6be;
     --note-content: #e7f2fa;
     --tip-title: #5a5;
-    --tip-content: #efe
+    --tip-content: #efe;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -128,7 +128,7 @@ a {
         --note-title: #069;
         --note-content: #023;
         --tip-title: #363;
-        --tip-content: #121
+        --tip-content: #121;
     }
 }
 
@@ -144,7 +144,7 @@ body.dark .notice {
     --note-title: #069;
     --note-content: #023;
     --tip-title: #363;
-    --tip-content: #121
+    --tip-content: #121;
 }
 
 .notice {
@@ -154,10 +154,6 @@ body.dark .notice {
     border-radius: var(--radius);
     color: var(--root-color);
     background: var(--root-background)
-}
-
-.notice p {
-
 }
 
 .notice p:last-child {
@@ -233,13 +229,13 @@ body.dark .notice {
 }
 
 .copyButton:active {
-    color: #67c23a;
+    color: var(--accent);
     filter: brightness(1.2) !important; /* 增加亮度 */
 }
 
 @media not (hover: none) {
     .copyButton:hover {
-        color: #67c23a;
+        color: var(--accent);
         transition: all .12s cubic-bezier(0, .5, .5, 1), margin-right 0s;
     }
 }
@@ -523,7 +519,7 @@ article[autonumbering] .toc li a:before {
 .inner a.active {
     font-size: 110%;
     font-weight: 900;
-    color: #67c23a;
+    color: var(--accent);
 }
 
 .toc ul {
@@ -557,5 +553,5 @@ article[autonumbering] .toc li a:before {
 }
 
 .toc li a:hover {
-    color: #6cee2b;
+    color: var(--accent-hover);
 }

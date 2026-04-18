@@ -67,13 +67,13 @@ body:not(.dark) #sun {
 
 #menu a {
     /*font-size: 17px;*/
-    font-size: clamp(17px, 1.2vw, 18px);;
+    font-size: clamp(17px, 1.2vw, 18px);
 }
 
 #menu .active {
     font-weight: 500;
     border-bottom: 2px solid currentColor;
-    color: #67c23a;
+    color: var(--accent);
 }
 
 .lang-switch li,

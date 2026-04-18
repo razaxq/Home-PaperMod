@@ -20,7 +20,7 @@
     {{- end }}
     {{- if not (.Param "hideMeta") }}
     <div class="post-meta">
-      {{- partial "post_meta_count.html" . -}}
+      {{- partial "post_meta.html" (dict "ctx" . "showAuthor" true) -}}
       {{- partial "translation_list.html" . -}}
       {{- partial "edit_post.html" . -}}
       {{- partial "post_canonical.html" . -}}
@@ -64,10 +64,7 @@
   </footer>
 
   {{- if (.Param "comments") }}
-
-  {{/* partial "giscus.html" . 已经停用，服务端已删除 */}}
   {{ partial "twikoo.html" . }}
-
   {{- end }}
 </article>
 
@@ -79,7 +76,7 @@
 <!-- Mermaid -->
 {{ if .Params.mermaid }}
 <script type="module">
-import mermaid from '//cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.esm.min.mjs';
 mermaid.initialize({ startOnLoad: true });
 </script>
 {{ end }}

@@ -14,13 +14,7 @@
     </script>
 
 
-    <!-- 不蒜子 -->
-    {{- if .Site.Params.busuanzi -}}
-    <!-- <script defer src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
-    <meta name="referrer" content="no-referrer-when-downgrade"> -->
-    {{- end -}}
-
-
+    {{ if ne .Layout "search" }}
     <script>
         if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
             (function () {
@@ -165,27 +159,6 @@
                         '.archive-posts > *',
                         '.post > *'
                     ], 70);
-
-                    // // 使用 MutationObserver 监听 id="twikoo" 的元素加载
-                    // const twikooObserver = new MutationObserver((mutations, observer) => {
-                    //     const twikooElement = document.getElementById('twikoo');
-                    //     if (twikooElement) {
-                    //         twikooElement.classList.add('loaded');
-                    //         observer.disconnect(); // 停止观察
-                    //     }
-                    // });
-                    //
-                    // // 监听整个文档的变化
-                    // twikooObserver.observe(document.documentElement, {
-                    //     childList: true,
-                    //     subtree: true
-                    // });
-                    //
-                    // // 安全后备：如果元素已经存在，直接添加类
-                    // const twikooElement = document.getElementById('twikoo');
-                    // if (twikooElement) {
-                    //     twikooElement.classList.add('loaded');
-                    // }
                 }
 
                 // 启动检测
@@ -212,6 +185,7 @@
             })();
         }
     </script>
+    {{ end }}
 
     <!-- post-entry 点击消失 -->
     <div>
@@ -331,15 +305,15 @@
         </script>
     </div>
 
-    <!-- 图片点击放大 Fancybox -->
+    <!-- 图片点击放大 Fancybox（仅在当前页存在图片时加载） -->
+    {{ if .Page.Store.Get "hasFancybox" }}
     <div>
-        <!-- 使用CDN的CSS -->
         <link
-            href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css"
+            href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.41/dist/fancybox/fancybox.css"
             rel="stylesheet"
         />
         <script type="module">
-            import {Fancybox} from 'https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.esm.js';
+            import {Fancybox} from 'https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.41/dist/fancybox/fancybox.esm.js';
 
         // 确保在页面加载完成后初始化
         if (document.readyState === 'loading') {
@@ -373,3 +347,4 @@
         }
     </script>
 </div>
+    {{ end }}
