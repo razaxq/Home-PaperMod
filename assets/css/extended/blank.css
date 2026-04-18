@@ -425,10 +425,6 @@ code {
 /* ========= 文章和目录自动编号（从二级标题开始）============ */
 
 .post-content {
-    counter-reset: h1
-}
-
-h1 {
     counter-reset: h2
 }
 
@@ -446,29 +442,24 @@ h4 {
     counter-reset: h5
 }
 
-article[autonumbering] h1:not(.post-title)::before {
-    counter-increment: h1;
-    content: counter(h1) ". "
-}
-
 article[autonumbering] h2:before {
     counter-increment: h2;
-    content: counter(h1) "." counter(h2) " "
+    content: counter(h2) ". "
 }
 
 article[autonumbering] h3:before {
     counter-increment: h3;
-    content: counter(h1) "." counter(h2) "." counter(h3) " "
+    content: counter(h2) "." counter(h3) " "
 }
 
 article[autonumbering] h4:before {
     counter-increment: h4;
-    content: counter(h1) "." counter(h2) "." counter(h3) "." counter(h4) " "
+    content: counter(h2) "." counter(h3) "." counter(h4) " "
 }
 
 article[autonumbering] h5:before {
     counter-increment: h5;
-    content: counter(h1) "." counter(h2) "." counter(h3) "." counter(h4) "." counter(h5) " "
+    content: counter(h2) "." counter(h3) "." counter(h4) "." counter(h5) " "
 }
 
 article[autonumbering] .toc ul {
