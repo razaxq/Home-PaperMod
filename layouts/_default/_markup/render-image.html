@@ -2,7 +2,6 @@
 {{- $Text := .Text -}}
 {{- $Title := .Title -}}
 {{- $isExternal := or (strings.HasPrefix $Destination "http://") (strings.HasPrefix $Destination "https://") -}} <!-- 检查是否是站外链接 -->
-{{- .Page.Store.Set "hasFancybox" true -}}
 
 {{ if $isExternal }}
 <div class="post-img-view">

@@ -303,7 +303,36 @@
         </script>
     </div>
 
-    <!--
-        Fancybox 已移至 single.html，避开 footer.html 的 partialCached 调用。
-        partialCached 缓存 key 不感知 .Page.Store，会冻结首次渲染的判断结果。
-    -->
+    <!-- Fancybox（运行时按需加载：检测到 [data-fancybox] 元素才注入 CSS/JS） -->
+    <script type="module">
+        if (document.querySelector('[data-fancybox]')) {
+            const css = document.createElement('link');
+            css.rel = 'stylesheet';
+            css.href = 'https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.41/dist/fancybox/fancybox.css';
+            document.head.appendChild(css);
+
+            const {Fancybox} = await import('https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.41/dist/fancybox/fancybox.esm.js');
+
+            Fancybox.bind("[data-fancybox]", {
+                Carousel: {
+                    transition: "slide",
+                },
+                groupAll: true,
+                groupAttr: "data",
+                contentClick: "zoomToFit",
+                contentDblClick: false,
+                wheel: "zoom",
+                Images: {
+                    initialSize: "fit",
+                    protected: true,
+                },
+                Toolbar: {
+                    display: {
+                        left: ["infobar"],
+                        middle: ["rotateCCW", "rotateCW", "flipX", "flipY"],
+                        right: ["download", "close"],
+                    },
+                },
+            });
+        }
+    </script>
