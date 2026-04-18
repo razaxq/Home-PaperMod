@@ -81,5 +81,43 @@ mermaid.initialize({ startOnLoad: true });
 </script>
 {{ end }}
 
-      
+<!-- Fancybox（仅在文章包含图片时加载，避开 footer 的 partialCached 缓存） -->
+{{ if .Page.Store.Get "hasFancybox" }}
+<link href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.41/dist/fancybox/fancybox.css" rel="stylesheet" />
+<script type="module">
+    import {Fancybox} from 'https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.41/dist/fancybox/fancybox.esm.js';
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initFancybox);
+    } else {
+        initFancybox();
+    }
+
+    function initFancybox() {
+        Fancybox.bind("[data-fancybox]", {
+            Carousel: {
+                transition: "slide",
+            },
+            groupAll: true,
+            groupAttr: "data",
+            contentClick: "zoomToFit",
+            contentDblClick: false,
+            wheel: "zoom",
+            Images: {
+                initialSize: "fit",
+                protected: true,
+            },
+            Toolbar: {
+                display: {
+                    left: ["infobar"],
+                    middle: ["rotateCCW", "rotateCW", "flipX", "flipY"],
+                    right: ["download", "close"],
+                },
+            },
+        });
+    }
+</script>
+{{ end }}
+
+
 {{- end }}{{/* end main */}}

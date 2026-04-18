@@ -303,46 +303,7 @@
         </script>
     </div>
 
-    <!-- 图片点击放大 Fancybox（仅在当前页存在图片时加载） -->
-    {{ if .Page.Store.Get "hasFancybox" }}
-    <div>
-        <link
-            href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.41/dist/fancybox/fancybox.css"
-            rel="stylesheet"
-        />
-        <script type="module">
-            import {Fancybox} from 'https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.41/dist/fancybox/fancybox.esm.js';
-
-        // 确保在页面加载完成后初始化
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initFancybox);
-        } else {
-            initFancybox();
-        }
-
-        function initFancybox() {
-            Fancybox.bind("[data-fancybox]", {
-                Carousel: {
-                    transition: "slide",
-                },
-                groupAll: true,
-                groupAttr: "data",
-                contentClick: "zoomToFit",
-                contentDblClick: false,
-                wheel: "zoom",
-                Images: {
-                    initialSize: "fit",
-                    protected: true,
-                },
-                Toolbar: {
-                    display: {
-                        left: ["infobar"],
-                        middle: ["rotateCCW", "rotateCW", "flipX", "flipY"],
-                        right: ["download", "close"],
-                    },
-                },
-            });
-        }
-    </script>
-</div>
-    {{ end }}
+    <!--
+        Fancybox 已移至 single.html，避开 footer.html 的 partialCached 调用。
+        partialCached 缓存 key 不感知 .Page.Store，会冻结首次渲染的判断结果。
+    -->
