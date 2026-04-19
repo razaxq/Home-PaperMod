@@ -93,89 +93,90 @@
     </div>
 </aside>
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        checkTocPosition();
-
-        // 获取所有带 id 的标题，存入数组
-        const headers = Array.from(document.querySelectorAll('h1[id],h2[id],h3[id],h4[id],h5[id],h6[id]'));
-        let activeElement = headers[0] || null;
-
-        // 缓存 TOC 链接，Map 的 key 为标题 id（小写）
-        const tocLinks = new Map();
-        document.querySelectorAll('.inner ul li a[href^="#"]').forEach(link => {
-            const id = link.getAttribute('href').substring(1).toLowerCase();
-            tocLinks.set(id, link);
-        });
-
-        // 激活第一个标题对应的链接
-        if (activeElement) {
-            const id = encodeURI(activeElement.getAttribute('id')).toLowerCase();
-            tocLinks.get(id)?.classList.add('active');
+    (function () {
+        // 防抖函数
+        function debounce(func, wait) {
+            let timeout;
+            return function (...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
         }
 
-        // 滚动事件，更新 active 标题
-        window.addEventListener('scroll', () => {
-            if (!headers.length) return;
+        // 从 CSS 变量获取宽度值
+        const main = parseInt(getComputedStyle(document.body).getPropertyValue('--article-width'), 10);
+        const toc = parseInt(getComputedStyle(document.body).getPropertyValue('--toc-width'), 10);
+        const tocContainer = document.getElementById('toc-container');
 
-            let newActive = activeElement;
-            for (const header of headers) {
-                const offset = getOffsetTop(header) - window.pageYOffset;
-                if (offset > 0 && offset < window.innerHeight / 2) {
-                    newActive = header;
-                    break;
-                }
+        // 宽屏时把 TOC 浮到正文右侧
+        function checkTocPosition() {
+            if (!tocContainer) return;
+            if (document.body.scrollWidth - main - (toc * 3) - 15 > 0) {
+                tocContainer.classList.add('wide');
+            } else {
+                tocContainer.classList.remove('wide');
+            }
+        }
+
+        function getOffsetTop(element) {
+            if (!element.getClientRects().length) return 0;
+            const rect = element.getBoundingClientRect();
+            return rect.top + window.pageYOffset;
+        }
+
+        function init() {
+            checkTocPosition();
+
+            const headers = Array.from(document.querySelectorAll('h1[id],h2[id],h3[id],h4[id],h5[id],h6[id]'));
+            let activeElement = headers[0] || null;
+
+            const tocLinks = new Map();
+            document.querySelectorAll('.inner ul li a[href^="#"]').forEach(link => {
+                const id = link.getAttribute('href').substring(1).toLowerCase();
+                tocLinks.set(id, link);
+            });
+
+            if (activeElement) {
+                const id = encodeURI(activeElement.getAttribute('id')).toLowerCase();
+                tocLinks.get(id)?.classList.add('active');
             }
 
-            if (newActive !== activeElement) {
-                activeElement = newActive;
-                // 更新 TOC 链接的 active 类
-                headers.forEach(header => {
-                    const id = encodeURI(header.getAttribute('id')).toLowerCase();
-                    const link = tocLinks.get(id);
-                    if (link) {
-                        header === activeElement ? link.classList.add('active') : link.classList.remove('active');
+            window.addEventListener('scroll', () => {
+                if (!headers.length) return;
+                let newActive = activeElement;
+                for (const header of headers) {
+                    const offset = getOffsetTop(header) - window.pageYOffset;
+                    if (offset > 0 && offset < window.innerHeight / 2) {
+                        newActive = header;
+                        break;
                     }
-                });
-            }
-        }, false);
+                }
+                if (newActive !== activeElement) {
+                    activeElement = newActive;
+                    headers.forEach(header => {
+                        const id = encodeURI(header.getAttribute('id')).toLowerCase();
+                        const link = tocLinks.get(id);
+                        if (link) {
+                            header === activeElement ? link.classList.add('active') : link.classList.remove('active');
+                        }
+                    });
+                }
+            }, false);
 
-        // 窗口尺寸变化时检查 TOC 位置（使用防抖处理）
-        window.addEventListener('resize', debounce(checkTocPosition, 250), false);
-    });
-
-    // 加载完成后再检查一次 TOC 位置
-    window.addEventListener('load', checkTocPosition);
-
-    // 防抖函数，减少事件频繁触发时的处理次数
-    function debounce(func, wait) {
-        let timeout;
-        return function(...args) {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => func.apply(this, args), wait);
-        };
-    }
-
-    // 从 CSS 变量获取宽度值（全局只执行一次）
-    const main = parseInt(getComputedStyle(document.body).getPropertyValue('--article-width'), 10);
-    const toc = parseInt(getComputedStyle(document.body).getPropertyValue('--toc-width'), 10);
-    const tocContainer = document.getElementById("toc-container");
-
-    // 检查 TOC 位置，添加或移除 "wide" 类
-    function checkTocPosition() {
-        if (!tocContainer) return;
-        if (document.body.scrollWidth - main - (toc * 3) - 15 > 0) {
-            tocContainer.classList.add("wide");
-        } else {
-            tocContainer.classList.remove("wide");
+            window.addEventListener('resize', debounce(checkTocPosition, 250), false);
         }
-    }
 
-    // 获取元素相对于页面顶部的偏移量
-    function getOffsetTop(element) {
-        if (!element.getClientRects().length) return 0;
-        const rect = element.getBoundingClientRect();
-        return rect.top + window.pageYOffset;
-    }
-
+        // SPA 切页时 DOMContentLoaded / load 早已触发，所以先判定 readyState 决定立即跑还是挂事件
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+        if (document.readyState === 'complete') {
+            checkTocPosition();
+        } else {
+            window.addEventListener('load', checkTocPosition);
+        }
+    })();
 </script>
 {{- end }}
