@@ -323,7 +323,7 @@ body.dark .header {
 @media (prefers-reduced-motion: no-preference) {
     /* 入场：从下方 24px 处淡入（由 JS 的 .loaded 类触发） */
     .main > *,
-    .post > *,
+    .post > *:not(.twikoo),
     .archive-posts > * {
         filter: none !important;
         -webkit-filter: none !important;
