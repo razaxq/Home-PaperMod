@@ -15,8 +15,9 @@
       {{- end }}
     </h1>
 
-    {{- if .Description }}
-    <p class="post-description">{{ .Description }}</p>
+    {{/* 优先展示 frontmatter 里的 summary；没有则回退到 description */}}
+    {{- with (.Params.summary | default .Description) }}
+    <p class="post-description">{{ . }}</p>
     {{- end }}
 
     {{- if not (.Param "hideMeta") }}
