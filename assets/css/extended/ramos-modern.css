@@ -21,6 +21,13 @@
     pointer-events: none;
     transition: width 80ms linear !important;
     box-shadow: 0 0 10px rgba(103, 194, 58, 0.45);
+    display: none;                              /* 默认隐藏 */
+}
+
+/* 只在文章详情页显示进度条 */
+body:has(.post.single-modern) #progress-bar,
+body:has(article.post.single) #progress-bar {
+    display: block;
 }
 
 
@@ -29,6 +36,11 @@
 ══════════════════════════════════════════════════════ */
 
 .header {
+    /* ★ 固定在视口顶部，滚动时始终可见 */
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 100 !important;
+
     background: rgba(250, 250, 248, 0.88) !important;
     border-bottom: 1px solid rgba(232, 232, 228, 0.75) !important;
     backdrop-filter: blur(20px) saturate(160%) !important;
@@ -38,6 +50,93 @@
         background 0.5s ease,
         border-color 0.5s ease !important;
     will-change: transform;
+}
+
+/* 有些主题的 body / main 用 overflow 约束会导致 sticky 失效，强制放开 */
+html, body { overflow-x: clip; overflow-y: visible; }
+
+
+/* ══════════════════════════════════════════════════════
+   选中文本背景 — 半透明（对齐设计稿）
+══════════════════════════════════════════════════════ */
+::selection {
+    background: rgba(103, 194, 58, 0.22) !important;
+    color: inherit !important;
+}
+
+
+/* ══════════════════════════════════════════════════════
+   Back-top 按钮（左下圆形浮动）
+══════════════════════════════════════════════════════ */
+.top-link {
+    position: fixed !important;
+    bottom: 24px !important;
+    left: 24px !important;
+    right: auto !important;
+    top: auto !important;
+    width: 42px !important;
+    height: 42px !important;
+    border-radius: 50% !important;
+    background: var(--entry) !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.08), 0 2px 5px rgba(0,0,0,0.04) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    opacity: 0;
+    transform: translateY(8px);
+    pointer-events: none;
+    transition:
+        opacity 0.24s ease,
+        transform 0.24s ease,
+        border-color 0.22s ease,
+        background 0.55s ease !important;
+    z-index: 90 !important;
+}
+.top-link.show {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+.top-link:hover {
+    border-color: var(--accent) !important;
+    color: var(--accent) !important;
+}
+.top-link svg { width: 16px; height: 16px; }
+
+@media (prefers-color-scheme: dark) {
+    .top-link { box-shadow: 0 4px 18px rgba(0,0,0,0.45) !important; }
+}
+body.dark .top-link {
+    box-shadow: 0 4px 18px rgba(0,0,0,0.45) !important;
+}
+
+
+/* ══════════════════════════════════════════════════════
+   Paginav 卡片 hover — accent 边框
+══════════════════════════════════════════════════════ */
+.paginav {
+    transition:
+        border-color 0.22s ease,
+        box-shadow 0.22s ease,
+        background 0.55s ease !important;
+}
+.paginav .prev,
+.paginav .next {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    transition:
+        border-color 0.22s ease,
+        box-shadow 0.22s ease,
+        transform 0.22s ease !important;
+}
+@media (hover: hover) {
+    .paginav .prev:hover,
+    .paginav .next:hover {
+        border-color: var(--accent) !important;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.06) !important;
+    }
 }
 
 @media (prefers-color-scheme: dark) {
@@ -94,8 +193,14 @@ body.dark .header {
 }
 
 .toc .inner a:hover:not(.active) {
-    color: var(--accent-hover) !important;
     padding-left: 11px !important;
+}
+
+/* 覆盖 blank.css 里 .toc li a:hover 的 accent 颜色，hover 不变色
+   但 active 状态仍然保持 accent */
+.toc li a:hover:not(.active),
+.toc .inner a:hover:not(.active) {
+    color: inherit !important;
 }
 
 
@@ -183,7 +288,230 @@ body.dark .header {
    8. 滚动条
 ══════════════════════════════════════════════════════ */
 
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--secondary); }
+/* 滚动条加粗并提升对比度 */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--secondary);
+    border-radius: 6px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    transition: background 0.2s ease;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--accent);
+    background-clip: padding-box;
+    border: 2px solid transparent;
+}
+
+/* Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--secondary) transparent;
+}
+
+
+/* ══════════════════════════════════════════════════════
+   9. 入场动画 + View Transitions 跨页面过渡
+══════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: no-preference) {
+    /* 入场：从下方 24px 处淡入（由 JS 的 .loaded 类触发） */
+    .main > *,
+    .post > *:not(.twikoo),
+    .archive-posts > * {
+        filter: none !important;
+        -webkit-filter: none !important;
+        opacity: 0;
+        transform: translateY(24px);
+        transition:
+            opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+            transform 0.55s cubic-bezier(0.22, 1, 0.36, 1) !important;
+    }
+
+    .main > *.loaded,
+    .post > *.loaded,
+    .archive-posts > *.loaded {
+        filter: none !important;
+        -webkit-filter: none !important;
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ══════════════════════════════════════════════════════
+   MPA 原生 View Transitions（Chrome 126+）
+   浏览器会在同源导航间自动做淡入淡出过渡，无需 JS 拦截
+══════════════════════════════════════════════════════ */
+
+@view-transition {
+    navigation: auto;
+}
+
+/* ══════════════════════════════════════════════════════
+   12. 代码块微调（行号间距）
+══════════════════════════════════════════════════════ */
+
+/* 行号与代码行间距舒服一些 */
+.post-content figure.highlight .gutter pre,
+.post-content figure.highlight .code pre {
+    line-height: 1.7 !important;
+}
+
+/* 行号列与代码列之间保留 gap */
+.post-content figure.highlight .gutter {
+    padding-right: 14px !important;
+}
+
+/* 空的 figcaption / 空的 codetab tab-bar 不渲染，避免出现大片白块 */
+.post-content figure.highlight > figcaption:empty,
+.post-content .codetab__header:empty,
+.post-content .codetab__tabs:empty {
+    display: none !important;
+}
+
+/* ══════════════════════════════════════════════════════
+   10. 目录美化：去掉 ▼ 三角，改用文字按钮
+══════════════════════════════════════════════════════ */
+
+.toc details > summary {
+    list-style: none !important;
+    cursor: pointer;
+    padding: 10px 4px !important;
+    margin-inline-start: 0 !important;
+    font-weight: 600;
+    color: var(--primary);
+    user-select: none;
+}
+.toc details > summary::-webkit-details-marker { display: none !important; }
+.toc details > summary::marker { content: '' !important; }
+
+/* ══════════════════════════════════════════════════════
+   11. 文章页 header（对齐设计稿的精确值）
+       分类 11px #67c23a 700 letter-spacing:1.8 uppercase
+       标题 38px 800 line-height:1.2 letter-spacing:-.8
+       描述 16.5px 1.7 var(--secondary)
+       meta 13px var(--tertiary) gap:18
+       tag  12px padding:3px 10px radius:20
+══════════════════════════════════════════════════════ */
+
+.single-modern .post-header.modern-header {
+    margin-bottom: 36px !important;
+}
+
+/* 分类（顶部小字） */
+.single-modern .post-category {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 14px 0;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.single-modern .post-category span:not(:last-child)::after {
+    content: '·';
+    margin-left: 10px;
+    color: var(--secondary);
+}
+
+/* 标题 */
+.single-modern .post-title {
+    font-size: 38px !important;
+    font-weight: 800 !important;
+    line-height: 1.2 !important;
+    letter-spacing: -0.8px !important;
+    margin: 0 0 16px !important;
+    color: var(--primary);
+}
+@media (max-width: 640px) {
+    .single-modern .post-title { font-size: 28px !important; }
+}
+
+/* 描述 */
+.single-modern .post-description {
+    font-size: 16.5px !important;
+    color: var(--secondary) !important;
+    line-height: 1.7 !important;
+    margin: 0 0 22px !important;
+    font-style: normal !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+}
+
+/* Meta 行 + 分割线（Ramos  2026.4.18  15 分钟阅读  2,817 字） */
+.single-modern .post-meta.modern-meta {
+    display: flex;
+    gap: 22px;
+    font-size: 13px;
+    color: var(--tertiary);
+    flex-wrap: wrap;
+    padding-bottom: 22px !important;
+    border-bottom: 1px solid var(--border) !important;
+    margin-bottom: 18px !important;
+    align-items: center;
+}
+/* 不要中间的 · 分隔符，移除原主题的 meta item separator */
+.single-modern .post-meta.modern-meta > *::before,
+.single-modern .post-meta.modern-meta > *::after {
+    content: none !important;
+}
+.single-modern .post-meta.modern-meta svg {
+    display: none !important;
+}
+/* 作者稍微醒目 */
+.single-modern .post-meta.modern-meta .meta-author {
+    color: var(--secondary);
+    font-weight: 500;
+}
+}
+
+/* 标签 — chip 样式 */
+.single-modern .header-tags {
+    list-style: none;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.single-modern .header-tags li {
+    list-style: none;
+    margin: 0;
+}
+.single-modern .header-tags a {
+    display: inline-block;
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: var(--border);
+    color: var(--secondary);
+    border: none !important;                /* 去掉边框 */
+    line-height: 1.6;
+    transition: background 0.18s ease, color 0.18s ease !important;
+    text-decoration: none;
+}
+.single-modern .header-tags a:hover {
+    background: color-mix(in srgb, var(--accent) 14%, transparent);
+    color: var(--accent);
+}
+
+/* 隐藏原 footer 里的标签（已移到 header） */
+.single-modern .post-footer > .post-tags {
+    display: none !important;
+}
+
+/* 正文 */
+.single-modern .post-content {
+    margin-top: 4px;
+    font-size: 17px;
+    line-height: 1.85;
+}

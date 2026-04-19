@@ -1,34 +1,62 @@
 {{- define "main" }}
-<article class="post" {{- if .Param "autonumbering" }} autonumbering {{- end }}>
-  <header class="post-header">
+<article class="post single-modern" {{- if .Param "autonumbering" }} autonumbering {{- end }}>
+
+  <header class="post-header modern-header">
     {{ partial "breadcrumbs.html" . }}
+
     <h1 class="post-title entry-hint-parent">
       {{ .Title }}
       {{- if .Draft }}
       <span class="entry-hint" title="Draft">
-        <svg xmlns="http://www.w3.org/2000/svg" height="35" viewBox="0 -960 960 960" fill="currentColor">
-          <path
-            d="M160-410v-60h300v60H160Zm0-165v-60h470v60H160Zm0-165v-60h470v60H160Zm360 580v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q9 9 13 20t4 22q0 11-4.5 22.5T862.09-380L643-160H520Zm300-263-37-37 37 37ZM580-220h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z" />
+        <svg xmlns="http://www.w3.org/2000/svg" height="32" viewBox="0 -960 960 960" fill="currentColor">
+          <path d="M160-410v-60h300v60H160Zm0-165v-60h470v60H160Zm0-165v-60h470v60H160Zm360 580v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q9 9 13 20t4 22q0 11-4.5 22.5T862.09-380L643-160H520Zm300-263-37-37 37 37ZM580-220h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z" />
         </svg>
       </span>
       {{- end }}
     </h1>
+
     {{- if .Description }}
-    <div class="post-description">
-      {{ .Description }}
-    </div>
+    <p class="post-description">{{ .Description }}</p>
     {{- end }}
+
     {{- if not (.Param "hideMeta") }}
-    <div class="post-meta">
-      {{- partial "post_meta.html" (dict "ctx" . "showAuthor" true) -}}
+    <div class="post-meta modern-meta">
+      {{- /* 作者 */ -}}
+      {{- with (partial "author.html" .) }}
+        <span class="meta-author">{{ . }}</span>
+      {{- end }}
+      {{- /* 日期 YYYY.M.D */ -}}
+      {{- if not .Date.IsZero }}
+        <span class="meta-date">{{ .Date.Format "2006.1.2" }}</span>
+      {{- end }}
+      {{- /* 阅读时间 */ -}}
+      {{- if (.Param "ShowReadingTime") }}
+        <span class="meta-reading">{{ .ReadingTime }} 分钟阅读</span>
+      {{- end }}
+      {{- /* 字数 */ -}}
+      {{- if (.Param "ShowWordCount") }}
+        <span class="meta-words">{{ lang.FormatNumberCustom 0 .WordCount }} 字</span>
+      {{- end }}
       {{- partial "translation_list.html" . -}}
       {{- partial "edit_post.html" . -}}
       {{- partial "post_canonical.html" . -}}
     </div>
     {{- end }}
+
+    {{/* 标签 — 移动到 header 末尾，紧跟 meta */}}
+    {{- $tags := .Language.Params.Taxonomies.tag | default "tags" }}
+    {{- with ($.GetTerms $tags) }}
+    <ul class="post-tags header-tags">
+      {{- range . }}
+      <li><a href="{{ .Permalink }}">#{{ .LinkTitle }}</a></li>
+      {{- end }}
+    </ul>
+    {{- end }}
   </header>
+
   {{- $isHidden := (.Param "cover.hiddenInSingle") | default (.Param "cover.hidden") | default false }}
   {{- partial "cover.html" (dict "cxt" . "IsSingle" true "isHidden" $isHidden) }}
+
   {{- if (.Param "ShowToc") }}
   {{- partial "toc.html" . }}
   {{- end }}
@@ -41,26 +69,13 @@
   </div>
   {{- end }}
 
-  <footer class="post-footer">
-    {{- $tags := .Language.Params.Taxonomies.tag | default "tags" }}  
-    <ul class="post-tags">
-      {{- if ($.GetTerms $tags) }}
-      <svg color="var(--secondary)" width="24px"  xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
-        <path fill-rule="evenodd" d="M5.25 2.25a3 3 0 0 0-3 3v4.318a3 3 0 0 0 .879 2.121l9.58 9.581c.92.92 2.39 1.186 3.548.428a18.849 18.849 0 0 0 5.441-5.44c.758-1.16.492-2.629-.428-3.548l-9.58-9.581a3 3 0 0 0-2.122-.879H5.25ZM6.375 7.5a1.125 1.125 0 1 0 0-2.25 1.125 1.125 0 0 0 0 2.25Z" clip-rule="evenodd" />
-      </svg>  
-      {{- end -}}
-      {{- range ($.GetTerms $tags) }}
-      <li><a href="{{ .Permalink }}">{{ .LinkTitle }}</a></li>
-      {{- end }}
-    </ul>
+  <footer class="post-footer modern-footer">
     {{- if (.Param "ShowPostNavLinks") }}
     {{- partial "post_nav_links.html" . }}
     {{- end }}
     {{- if (and site.Params.ShowShareButtons (ne .Params.disableShare true)) }}
     {{- partial "share_icons.html" . -}}
     {{- end }}
-
-    
   </footer>
 
   {{- if (.Param "comments") }}
@@ -68,12 +83,10 @@
   {{- end }}
 </article>
 
-<!-- MathJax -->
 {{ if .Params.mathjax }}
 <div>{{ partial "mathjax.html" . }}</div>
 {{ end }}
 
-<!-- Mermaid -->
 {{ if .Params.mermaid }}
 <script type="module">
 import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.esm.min.mjs';
