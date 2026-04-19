@@ -4,10 +4,6 @@
         font-size: 17px;
     }
 
-    .top-link {
-        color: transparent;
-        background: transparent;
-    }
     /* theme-vars */
     :root {
         --gap: clamp(14px, 3.3vw, 24px);
