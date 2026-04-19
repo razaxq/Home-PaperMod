@@ -347,9 +347,11 @@
 </div>
 
 
-<!-- ═══════════════════════════════════════════════════════════
-     ramos-modern：Header 滚动隐藏 · 阅读进度条 · TOC 高亮
-     ══════════════════════════════════════════════════════════ -->
+
+<!-- ══════════════════════════════════════════════════════════
+     ramos-modern JS
+     Header 滚动隐藏 · 阅读进度条 · TOC 章节高亮
+     ════════════════════════════════════════════════════════ -->
 <script>
 (function () {
     'use strict';
@@ -361,58 +363,85 @@
         };
     }
 
-    /* 1. Header 滚动隐藏 / 显示 */
+    /* ── 1. Header 滚动隐藏 / 显示 ── */
     var header = document.querySelector('.header');
     if (header && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        var lastY = 0;
+        var lastY = window.scrollY || 0;
         window.addEventListener('scroll', throttle(function () {
             var y = window.scrollY;
-            if (y < 80)              header.classList.remove('scroll-hidden');
-            else if (y > lastY + 12) header.classList.add('scroll-hidden');
-            else if (y < lastY - 12) header.classList.remove('scroll-hidden');
+            if (y < 80) {
+                header.classList.remove('scroll-hidden');
+            } else if (y > lastY + 12) {
+                header.classList.add('scroll-hidden');
+            } else if (y < lastY - 12) {
+                header.classList.remove('scroll-hidden');
+            }
             lastY = y;
         }, 50), { passive: true });
     }
 
-    /* 2. 阅读进度条（仅文章页） */
+    /* ── 2. 阅读进度条 ──
+       CSS 已将 #progress-bar 改为 position:fixed，
+       这里无论哪种页面都更新宽度（列表页内容短，进度条=0，无影响）。
+    */
     var progressBar = document.getElementById('progress-bar');
-    if (progressBar && document.querySelector('.post')) {
-        window.addEventListener('scroll', throttle(function () {
+    if (progressBar) {
+        var updateProgress = throttle(function () {
             var total = document.documentElement.scrollHeight - window.innerHeight;
-            progressBar.style.width = (total > 0
-                ? Math.min(100, window.scrollY / total * 100)
-                : 0) + '%';
-        }, 30), { passive: true });
+            progressBar.style.width = (
+                total > 0 ? Math.min(100, (window.scrollY / total) * 100) : 0
+            ) + '%';
+        }, 30);
+        window.addEventListener('scroll', updateProgress, { passive: true });
+        updateProgress();
     }
 
-    /* 3. TOC 激活章节高亮 */
+    /* ── 3. TOC 激活章节高亮 ── */
     var tocLinks = document.querySelectorAll('.toc .inner a');
     if (tocLinks.length) {
+        /* 构建 heading 元素 → TOC 链接 的映射 */
         var headingMap = [];
         tocLinks.forEach(function (a) {
-            var id = (a.getAttribute('href') || '').replace(/^[^#]*#/, '');
-            var el = id && document.getElementById(id);
+            var href = a.getAttribute('href') || '';
+            var hash = href.indexOf('#');
+            var id   = hash >= 0 ? href.slice(hash + 1) : '';
+            if (!id) return;
+            var el = document.getElementById(id);
             if (el) headingMap.push({ el: el, a: a });
         });
 
-        var curActive = null;
-        var threshold = parseFloat(
-            getComputedStyle(document.documentElement).getPropertyValue('--header-height')
-        ) + 20 || 80;
+        if (headingMap.length) {
+            var curActive  = null;
+            /* 读取主题已定义的 header 高度变量，默认 60px */
+            var headerH = parseInt(
+                getComputedStyle(document.documentElement)
+                    .getPropertyValue('--header-height')
+            ) || 60;
+            var THRESHOLD = headerH + 24;
 
-        var updateTOC = throttle(function () {
-            var active = (window.scrollY < 120) ? headingMap[0] : null;
-            headingMap.forEach(function (h) {
-                if (h.el.getBoundingClientRect().top <= threshold) active = h;
-            });
-            if (active === curActive) return;
-            curActive = active;
-            tocLinks.forEach(function (a) { a.classList.remove('active'); });
-            if (active) active.a.classList.add('active');
-        }, 60);
+            var updateTOC = throttle(function () {
+                /* 找到最后一个 top <= 阈值的标题 */
+                var active = null;
+                for (var i = 0; i < headingMap.length; i++) {
+                    if (headingMap[i].el.getBoundingClientRect().top <= THRESHOLD) {
+                        active = headingMap[i];
+                    }
+                }
+                /* 未滚动时默认高亮第一项 */
+                if (!active) active = headingMap[0];
 
-        window.addEventListener('scroll', updateTOC, { passive: true });
-        updateTOC();
+                if (active === curActive) return;
+                curActive = active;
+
+                tocLinks.forEach(function (a) { a.classList.remove('active'); });
+                active.a.classList.add('active');
+            }, 60);
+
+            window.addEventListener('scroll', updateTOC, { passive: true });
+            /* 立即执行一次，确保页面加载时就有高亮 */
+            updateTOC();
+        }
     }
+
 })();
 </script>
