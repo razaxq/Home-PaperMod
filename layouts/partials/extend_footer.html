@@ -53,11 +53,33 @@
                     const createSequentialObserver = (selectors, delay) => {
                         const elementsRegistry = [];
 
+                        /* 过滤掉无布局的节点（<script>/<noscript>/<template> 等）——
+                           它们 getBoundingClientRect().top === 0，会把排序挤到最前
+                           并消耗 70ms 延迟槽位，干扰后续可见元素（如 #tcomment）的处理时序 */
+                        const isRenderable = (el) => {
+                            const tag = el.tagName;
+                            if (tag === 'SCRIPT' || tag === 'NOSCRIPT' || tag === 'TEMPLATE' || tag === 'STYLE' || tag === 'LINK' || tag === 'META') return false;
+                            // offsetParent === null 表示 display:none 或脱流（但 position:fixed 例外），保守起见只排除明显的
+                            return true;
+                        };
+
                         selectors.forEach(selector => {
                             const elements = Array.from(document.querySelectorAll(selector));
                             elements.forEach(element => {
+                                if (!isRenderable(element)) return;
                                 elementsRegistry.push({element, loaded: false, isImmediate: false});
                             });
+                        });
+
+                        /* 首屏判定：只有不在视口里的元素才加 .pending（带 translateY(24px) 的
+                           初始状态），首屏内元素保留默认 transform: none，只淡入 ——
+                           避免刷新页面时首屏内容"从下方滑上来"给用户"页面往下走了"的错觉 */
+                        const viewportBottomInit = window.pageYOffset + window.innerHeight;
+                        elementsRegistry.forEach(item => {
+                            const elTop = item.element.getBoundingClientRect().top + window.pageYOffset;
+                            if (elTop > viewportBottomInit) {
+                                item.element.classList.add('pending');
+                            }
                         });
 
                         // 立即加载元素标记

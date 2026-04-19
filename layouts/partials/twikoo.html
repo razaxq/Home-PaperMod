@@ -38,14 +38,84 @@
                 path: window.TWIKOO_MAGIC_PATH || window.location.pathname,
             });
 
-            // 监听评论容器更新
-            new MutationObserver((_, observer) => {
-                const targetNode = document.querySelector('.tk-comments-no span');
-                if (targetNode && hitokotoText) {
-                    targetNode.textContent = `「 ${hitokotoText}」`;
-                    observer.disconnect();
+            // Twikoo 基于 Vue 2，$mount(el) 会【替换】#tcomment 元素本身，
+            // 所以不能缓存 #tcomment 的引用（会变成孤儿节点）。
+            // 做法：等 twikoo 的根节点（<div id="twikoo" class="twikoo">）出现在 DOM 里，
+            //      再用一个 IntersectionObserver 在它进入视口时加 .loaded
+            let rootFound = false;
+            let markedLoaded = false;
+            let hitokotoDone = !hitokotoText;
+
+            function findTwikooRoot() {
+                // 首选：id=twikoo（Vue 2 $mount 替换 #tcomment 后的根）
+                let el = document.getElementById('twikoo');
+                if (el) return el;
+                // 次选：#tcomment 仍在但已经填了内容
+                el = document.getElementById('tcomment');
+                if (el && el.children.length > 0) return el;
+                // 退选：第一个带 .twikoo 类的元素
+                return document.querySelector('.twikoo');
+            }
+
+            function markLoaded(el) {
+                if (markedLoaded || !el) return;
+                el.classList.add('loaded');
+                markedLoaded = true;
+            }
+
+            function hookupIntersection(el) {
+                if (rootFound) return;
+                rootFound = true;
+                if (!('IntersectionObserver' in window)) {
+                    // 不支持 IO：直接加 .loaded
+                    markLoaded(el);
+                    return;
                 }
-            }).observe(document.body, {childList: true, subtree: true});
+                const io = new IntersectionObserver((entries) => {
+                    for (const e of entries) {
+                        if (e.isIntersecting) {
+                            markLoaded(e.target);
+                            io.disconnect();
+                            break;
+                        }
+                    }
+                }, { rootMargin: '0px 0px 100px 0px', threshold: 0 });
+                io.observe(el);
+                // 若元素当下已在视口里（用户直接跳 #comment 或页面很短），兜底立即检查
+                const rect = el.getBoundingClientRect();
+                if (rect.top < (window.innerHeight + 100) && rect.bottom > 0) {
+                    markLoaded(el);
+                    io.disconnect();
+                }
+            }
+
+            // 先同步尝试一次
+            let rootEl = findTwikooRoot();
+            if (rootEl) hookupIntersection(rootEl);
+
+            // MutationObserver 等 #twikoo 出现
+            const mo = new MutationObserver(() => {
+                if (!rootFound) {
+                    const el = findTwikooRoot();
+                    if (el) hookupIntersection(el);
+                }
+                if (!hitokotoDone) {
+                    const targetNode = document.querySelector('.tk-comments-no span');
+                    if (targetNode) {
+                        targetNode.textContent = `「 ${hitokotoText}」`;
+                        hitokotoDone = true;
+                    }
+                }
+                if (rootFound && hitokotoDone) {
+                    mo.disconnect();
+                }
+            });
+            mo.observe(document.body, {childList: true, subtree: true});
+            // 兜底：8s 后无论如何断开；并最后再强行打一次 .loaded（防止 IntersectionObserver 某些情况卡住）
+            setTimeout(() => {
+                mo.disconnect();
+                if (!markedLoaded) markLoaded(findTwikooRoot());
+            }, 8000);
         }).catch(console.error);
     })();
 </script>

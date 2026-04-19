@@ -321,17 +321,25 @@ body.dark .header {
 ══════════════════════════════════════════════════════ */
 
 @media (prefers-reduced-motion: no-preference) {
-    /* 入场：从下方 24px 处淡入（由 JS 的 .loaded 类触发） */
+    /* 入场默认态：只把透明度降到 0，不做 translateY —— 避免刷新页面时
+       首屏元素"从下方 24px 滑上来"导致用户感觉页面往下走了一段 */
     .main > *,
-    .post > *:not(.twikoo),
+    .post > *,
     .archive-posts > * {
         filter: none !important;
         -webkit-filter: none !important;
         opacity: 0;
-        transform: translateY(24px);
         transition:
             opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
             transform 0.55s cubic-bezier(0.22, 1, 0.36, 1) !important;
+    }
+
+    /* 只有被 JS 标记为 .pending 的元素（当前视口外、会滚动到时再入场）才有 translateY
+       首屏直接可见的元素不走这条路径 —— 它们被 .loaded 之后只是淡入 */
+    .main > *.pending,
+    .post > *.pending,
+    .archive-posts > *.pending {
+        transform: translateY(24px);
     }
 
     .main > *.loaded,
