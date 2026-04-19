@@ -160,6 +160,11 @@
                     ], 70);
                 }
 
+                // SPA 切页后重新触发逐步加载（新内容默认 opacity:0，需要再跑一遍 loader 才能依次 .loaded）
+                document.addEventListener('spa:loaded', function () {
+                    initSequentialLoader();
+                });
+
                 // 启动检测
                 if (performance.getEntriesByName('first-contentful-paint').length > 0) {
                     checkContentReady();
@@ -184,28 +189,6 @@
             })();
         }
     </script>
-
-    <!-- post-entry 点击消失 -->
-    <div>
-        <script type="module">
-            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-                document.querySelectorAll('.post-entry,.logo a,#menu a').forEach(function (entry) {
-                    entry.addEventListener('click', function () {
-                        var entries = document.querySelectorAll('.main');
-                        entries.forEach(function (entry) {
-                            entry.classList.add('unloaded');
-                        });
-                    });
-                });
-                window.addEventListener('pageshow', function () {
-                    var entries = document.querySelectorAll('.main');
-                    entries.forEach(function (entry) {
-                        entry.classList.remove('unloaded');
-                    });
-                });
-            }
-        </script>
-    </div>
 
     <!-- 复制按钮 -->
     <div>
@@ -355,53 +338,87 @@
 
 
 
+
 <!-- ══════════════════════════════════════════════════════════
-     ramos-modern JS v10 — View Transitions API
-     现代浏览器：原生跨页面过渡，无白屏
-     旧浏览器：自动降级为立即导航（无动画）
+     ramos-modern JS v21 — SPA 风格（fetch + 内容替换）
+     点击内链 → fetch HTML → 替换 <main> + <title> →
+     重新执行新页面的 <script> → pushState → 平滑过渡
      ════════════════════════════════════════════════════════ -->
 <script>
 (function () {
     'use strict';
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    var REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var FADE_MS = REDUCED ? 0 : 180;
 
     /* progress-bar 移到 body */
     var pb = document.getElementById('progress-bar');
     if (pb && pb.parentNode !== document.body) document.body.appendChild(pb);
 
-    /* ── 1. Header 滚动隐藏 ── */
-    var header = document.querySelector('.header');
-    if (header) {
-        var lastY = window.scrollY || 0, hTick = false;
-        function hUpd() {
+    /* ════════════════════════════════════════════════════════
+       核心 A. 逐页执行的初始化器 —— 每次内容替换后都要重跑
+       ════════════════════════════════════════════════════════ */
+    function initPage() {
+        initHeaderHide();
+        initProgressBar();
+        initTOC();
+        initBackTop();
+
+        /* Fancybox 重绑 */
+        if (window.Fancybox && typeof window.Fancybox.bind === 'function') {
+            try { window.Fancybox.unbind('[data-fancybox]'); } catch (e) {}
+            try { window.Fancybox.bind('[data-fancybox]'); } catch (e) {}
+        }
+
+        /* Twikoo / 评论 —— 按需再加 */
+    }
+
+    /* ── Header 滚动隐藏 ── */
+    var _headerState = null;
+    function initHeaderHide() {
+        var header = document.querySelector('.header');
+        if (!header) return;
+        if (_headerState) window.removeEventListener('scroll', _headerState.handler);
+        var lastY = window.scrollY || 0, tick = false;
+        function upd() {
             var y = window.scrollY, d = y - lastY;
             if (y < 80) header.classList.remove('scroll-hidden');
             else if (d > 2) header.classList.add('scroll-hidden');
             else if (d < -2) header.classList.remove('scroll-hidden');
-            lastY = y; hTick = false;
+            lastY = y; tick = false;
         }
-        window.addEventListener('scroll', function () {
-            if (!hTick) { requestAnimationFrame(hUpd); hTick = true; }
-        }, { passive: true });
+        var handler = function () {
+            if (!tick) { requestAnimationFrame(upd); tick = true; }
+        };
+        window.addEventListener('scroll', handler, { passive: true });
+        _headerState = { handler: handler };
     }
 
-    /* ── 2. 进度条 ── */
-    if (pb) {
-        var pTick = false;
-        function pUpd() {
+    /* ── 进度条 ── */
+    var _pbState = null;
+    function initProgressBar() {
+        if (!pb) return;
+        if (_pbState) window.removeEventListener('scroll', _pbState.handler);
+        var tick = false;
+        function upd() {
             var total = document.documentElement.scrollHeight - window.innerHeight;
             pb.style.width = (total > 0 ? Math.min(100, Math.max(0, window.scrollY / total * 100)) : 0) + '%';
-            pTick = false;
+            tick = false;
         }
-        window.addEventListener('scroll', function () {
-            if (!pTick) { requestAnimationFrame(pUpd); pTick = true; }
-        }, { passive: true });
-        pUpd();
+        var handler = function () {
+            if (!tick) { requestAnimationFrame(upd); tick = true; }
+        };
+        window.addEventListener('scroll', handler, { passive: true });
+        _pbState = { handler: handler };
+        upd();
     }
 
-    /* ── 3. TOC 高亮 ── */
-    var tocLinks = document.querySelectorAll('.toc .inner a');
-    if (tocLinks.length) {
+    /* ── TOC 高亮 ── */
+    var _tocState = null;
+    function initTOC() {
+        if (_tocState) window.removeEventListener('scroll', _tocState.handler);
+        var tocLinks = document.querySelectorAll('.toc .inner a');
+        if (!tocLinks.length) { _tocState = null; return; }
         var hm = [];
         tocLinks.forEach(function (a) {
             var h = a.getAttribute('href') || '', i = h.indexOf('#');
@@ -409,54 +426,233 @@
             var el = id && document.getElementById(id);
             if (el) hm.push({ el: el, a: a });
         });
-        if (hm.length) {
-            var cur = null;
-            var hh = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--header-height')) || 60;
-            var TH = hh + 24, tTick = false;
-            function tUpd() {
-                var act = null;
-                for (var i = 0; i < hm.length; i++) {
-                    if (hm[i].el.getBoundingClientRect().top <= TH) act = hm[i];
-                }
-                if (!act) act = hm[0];
-                if (act !== cur) {
-                    cur = act;
-                    tocLinks.forEach(function (a) { a.classList.remove('active'); });
-                    act.a.classList.add('active');
-                }
-                tTick = false;
+        if (!hm.length) return;
+        var cur = null;
+        var hh = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--header-height')) || 60;
+        var TH = hh + 24, tick = false;
+        function upd() {
+            var act = null;
+            for (var i = 0; i < hm.length; i++) {
+                if (hm[i].el.getBoundingClientRect().top <= TH) act = hm[i];
             }
-            window.addEventListener('scroll', function () {
-                if (!tTick) { requestAnimationFrame(tUpd); tTick = true; }
-            }, { passive: true });
-            tUpd();
+            if (!act) act = hm[0];
+            if (act !== cur) {
+                cur = act;
+                tocLinks.forEach(function (a) { a.classList.remove('active'); });
+                act.a.classList.add('active');
+            }
+            tick = false;
         }
+        var handler = function () {
+            if (!tick) { requestAnimationFrame(upd); tick = true; }
+        };
+        window.addEventListener('scroll', handler, { passive: true });
+        _tocState = { handler: handler };
+        upd();
     }
 
-    /* ── 4. Back-top 显示 ── */
-    var topLink = document.querySelector('.top-link');
-    if (topLink) {
-        var bTick = false;
-        function bUpd() {
+    /* ── Back-top ── */
+    var _btState = null;
+    function initBackTop() {
+        var topLink = document.querySelector('.top-link');
+        if (!topLink) return;
+        if (_btState) window.removeEventListener('scroll', _btState.handler);
+        var tick = false;
+        function upd() {
             if (window.scrollY > 400) topLink.classList.add('show');
             else topLink.classList.remove('show');
-            bTick = false;
+            tick = false;
         }
-        window.addEventListener('scroll', function () {
-            if (!bTick) { requestAnimationFrame(bUpd); bTick = true; }
-        }, { passive: true });
-        bUpd();
+        var handler = function () {
+            if (!tick) { requestAnimationFrame(upd); tick = true; }
+        };
+        window.addEventListener('scroll', handler, { passive: true });
+        _btState = { handler: handler };
+        upd();
     }
 
-    /* ══════════════════════════════════════════════════════════
-       5. 页面过渡 —— 交给 MPA 原生 View Transitions（CSS @view-transition）
-       ══════════════════════════════════════════════════════════ */
+    /* ════════════════════════════════════════════════════════
+       核心 B. SPA 路由
+       ════════════════════════════════════════════════════════ */
+    var host = location.host;
+    /* 候选选择器，按顺序尝试；适配不同主题模板 */
+    var MAIN_SELECTORS = ['main .main', 'main', '.main', '#main', '[role="main"]'];
+    function getMain(root) {
+        root = root || document;
+        for (var i = 0; i < MAIN_SELECTORS.length; i++) {
+            var el = root.querySelector(MAIN_SELECTORS[i]);
+            if (el) return el;
+        }
+        return null;
+    }
+    var cache = new Map();
+    var isNavigating = false;
 
-    /* bfcache / 回退清理（以防残留） */
-    window.addEventListener('pageshow', function () {
-        document.querySelectorAll('.main.unloaded').forEach(function (m) {
-            m.classList.remove('unloaded');
+    function isInternal(a) {
+        if (!a || !a.href) return false;
+        if (a.hasAttribute('data-fancybox')) return false;
+        if (a.closest && a.closest('[data-fancybox],.fancybox__container,.fancybox__slide')) return false;
+        if (/\.(jpe?g|png|gif|webp|avif|svg|bmp|mp4|pdf|zip)(\?.*)?$/i.test(a.href)) return false;
+        try {
+            var u = new URL(a.href);
+            if (u.host !== host) return false;
+            if (a.target === '_blank' || a.hasAttribute('download')) return false;
+            return true;
+        } catch (e) { return false; }
+    }
+
+    /* 解析 HTML 字符串为 document */
+    function parseHTML(str) {
+        var doc = document.implementation.createHTMLDocument('');
+        doc.documentElement.innerHTML = str;
+        return doc;
+    }
+
+    /* 同步 header #menu 的 active 高亮（SPA 只换 main，不换 header，所以要手动更新） */
+    function syncMenuActive(newDoc) {
+        var newMenu = newDoc.querySelector('#menu');
+        var curMenu = document.querySelector('#menu');
+        if (!newMenu || !curMenu) return;
+        var activeHrefs = Object.create(null);
+        newMenu.querySelectorAll('a').forEach(function (a) {
+            var span = a.querySelector('span');
+            if (span && span.classList.contains('active')) {
+                activeHrefs[a.getAttribute('href')] = true;
+            }
         });
+        curMenu.querySelectorAll('a').forEach(function (a) {
+            var span = a.querySelector('span');
+            if (!span) return;
+            if (activeHrefs[a.getAttribute('href')]) {
+                span.classList.add('active');
+            } else {
+                span.classList.remove('active');
+            }
+        });
+    }
+
+    /* 重新执行指定容器内所有 <script>（innerHTML 注入的 script 不会自动执行） */
+    function executeScripts(container) {
+        var scripts = container.querySelectorAll('script');
+        scripts.forEach(function (oldScript) {
+            var newScript = document.createElement('script');
+            /* 复制属性 */
+            for (var i = 0; i < oldScript.attributes.length; i++) {
+                var attr = oldScript.attributes[i];
+                newScript.setAttribute(attr.name, attr.value);
+            }
+            if (oldScript.src) {
+                /* 外链 script：只在未加载过时重新添加 */
+                if (!document.querySelector('script[src="' + oldScript.src + '"]')) {
+                    document.head.appendChild(newScript);
+                }
+            } else {
+                newScript.textContent = oldScript.textContent;
+                oldScript.parentNode.replaceChild(newScript, oldScript);
+            }
+        });
+    }
+
+    /* fetch + swap */
+    function navigate(href, push) {
+        if (isNavigating) return;
+        isNavigating = true;
+
+        var oldMain = getMain(document);
+        if (!oldMain) { window.location.href = href; return; }
+
+        /* 淡出 */
+        oldMain.style.transition = 'opacity ' + FADE_MS + 'ms ease, transform ' + FADE_MS + 'ms ease';
+        oldMain.style.opacity = '0';
+        oldMain.style.transform = 'translateY(-8px)';
+        oldMain.style.pointerEvents = 'none';
+
+        var fetchP = cache.has(href)
+            ? Promise.resolve(cache.get(href))
+            : fetch(href, { credentials: 'same-origin' }).then(function (r) { return r.text(); });
+
+        var fadeP = new Promise(function (res) { setTimeout(res, FADE_MS); });
+
+        Promise.all([fetchP, fadeP]).then(function (arr) {
+            var html = arr[0];
+            cache.set(href, html);
+
+            var doc = parseHTML(html);
+            var newMain = getMain(doc);
+            var newTitle = doc.querySelector('title');
+
+            if (!newMain) {
+                console.warn('[SPA] new page has no .main, fallback to hard nav');
+                window.location.href = href;
+                return;
+            }
+
+            /* 替换 main 的 innerHTML 而不是整个节点，保留父节点引用 */
+            oldMain.innerHTML = newMain.innerHTML;
+            /* 同步 class（可能有 post / list 等类） */
+            oldMain.className = newMain.className;
+
+            var mainAfter = oldMain;
+
+            /* 替换 title */
+            if (newTitle) document.title = newTitle.textContent;
+
+            /* 同步 header #menu 的 active 高亮 */
+            syncMenuActive(doc);
+
+            /* 重新执行新 main 内的 script */
+            executeScripts(mainAfter);
+
+            /* pushState */
+            if (push) history.pushState({ href: href }, '', href);
+
+            /* 滚动到顶 */
+            window.scrollTo(0, 0);
+
+            /* 清除淡出时留下的 inline 样式：
+               - opacity/transform 让 main 立即回到可见位置（子元素由 CSS 默认 opacity:0 隐藏，稍后由 sequential loader 逐个 .loaded）
+               - pointer-events 必须清掉，否则 main 内部的所有链接都会被穿透到 body，变成点不开 */
+            mainAfter.style.transition = 'none';
+            mainAfter.style.opacity = '';
+            mainAfter.style.transform = '';
+            mainAfter.style.pointerEvents = '';
+            requestAnimationFrame(function () {
+                mainAfter.style.transition = '';
+            });
+
+            /* 重新初始化 header / progress / TOC / back-top */
+            initPage();
+
+            /* 触发 spa:loaded：sequential loader 会监听并逐个给子元素加 .loaded，复现原始入场动画 */
+            document.dispatchEvent(new CustomEvent('spa:loaded', { detail: { href: href } }));
+
+            isNavigating = false;
+        }).catch(function () {
+            /* 失败兜底：直接硬跳 */
+            window.location.href = href;
+        });
+    }
+
+    /* 拦截点击 */
+    document.addEventListener('click', function (e) {
+        if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        var a = e.target.closest && e.target.closest('a');
+        if (!isInternal(a)) return;
+
+        var u = new URL(a.href);
+        /* 同路径锚点 → 不拦截（让浏览器跳锚） */
+        if (u.pathname === location.pathname && u.hash) return;
+
+        e.preventDefault();
+        navigate(a.href, true);
+    }, true);
+
+    /* 浏览器前进/后退 */
+    window.addEventListener('popstate', function () {
+        navigate(location.href, false);
     });
+
+    /* 首屏初始化 */
+    initPage();
 })();
 </script>
