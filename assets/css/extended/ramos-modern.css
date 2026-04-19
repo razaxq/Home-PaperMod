@@ -1,0 +1,159 @@
+/*
+ * ramos-modern.css
+ * 叠加在现有 blank.css 之上，不覆盖已有动画系统。
+ * 放到：themes/PaperMod-Ramos/assets/css/extended/ramos-modern.css
+ * Hugo 会自动合并 extended/ 目录下所有 CSS。
+ */
+
+/* ══════════════════════════════════════════
+   1. Header — 毛玻璃 + 滚动隐藏
+══════════════════════════════════════════ */
+
+.header {
+    /* 毛玻璃 */
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+
+    /* 半透明背景（覆盖原来的纯色） */
+    background: rgba(255, 255, 255, 0.82) !important;
+    border-bottom: 1px solid rgba(238, 238, 238, 0.72);
+
+    /* 滚动隐藏用的过渡，单独声明避免覆盖 body transition */
+    transition:
+        transform 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+        background 0.5s ease,
+        border-color 0.5s ease !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    .header {
+        background: rgba(29, 30, 32, 0.88) !important;
+        border-bottom-color: rgba(51, 51, 51, 0.72);
+    }
+}
+
+/* JS 会添加 / 移除这个 class */
+.header.scroll-hidden {
+    transform: translateY(-100%);
+}
+
+
+/* ══════════════════════════════════════════
+   2. 阅读进度条（激活已有的 #progress-bar）
+══════════════════════════════════════════ */
+
+#progress-bar {
+    position: absolute;
+    bottom: -1px; left: 0;
+    height: 2.5px;
+    width: 0%;                          /* JS 实时更新 */
+    background: var(--accent);
+    border-radius: 0 2px 2px 0;
+    box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 60%, transparent);
+    transition: width 80ms linear;
+    pointer-events: none;
+    z-index: 5;
+}
+
+
+/* ══════════════════════════════════════════
+   3. TOC 激活高亮（平滑 border-left，替换原有跳字体）
+══════════════════════════════════════════ */
+
+.toc .inner a {
+    display: block;
+    padding-left: 8px;
+    border-left: 2px solid transparent;
+    transition:
+        color 0.2s ease,
+        padding-left 0.18s ease,
+        border-left-color 0.2s ease !important;
+}
+
+/* 覆盖 blank.css 中 font-size: 110% 的跳动效果 */
+.toc .inner a.active {
+    font-size: 100% !important;
+    font-weight: 600 !important;
+    color: var(--accent) !important;
+    padding-left: 14px;
+    border-left-color: var(--accent);
+}
+
+.toc .inner a:hover:not(.active) {
+    color: var(--accent-hover);
+    padding-left: 11px;
+}
+
+
+/* ══════════════════════════════════════════
+   4. Nav 链接 hover 下划线
+══════════════════════════════════════════ */
+
+/* 在 span 上做伪元素，不影响 .active 的 border-bottom */
+#menu a span:not(.active) {
+    position: relative;
+}
+
+#menu a span:not(.active)::after {
+    content: '';
+    position: absolute;
+    bottom: -2px; left: 0; right: 0;
+    height: 1.5px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: left center;
+    border-radius: 2px;
+    transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#menu a:hover span:not(.active)::after {
+    transform: scaleX(1);
+}
+
+
+/* ══════════════════════════════════════════
+   5. Post card — hover 边框变色
+══════════════════════════════════════════ */
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .post-entry.loaded:hover {
+        border-color: var(--accent) !important;
+        /* 保留原有的 scale + shadow，只增加 border 动效 */
+        transition:
+            box-shadow 0.25s ease,
+            border-color 0.22s ease,
+            transform 0.95s cubic-bezier(0, 0.5, 0.4, 1),
+            filter 0.95s cubic-bezier(0, 0.5, 0.4, 1) !important;
+    }
+}
+
+/* border 颜色过渡（需要元素本身有 transition） */
+.post-entry {
+    border: 1px solid var(--border);
+    transition:
+        transform 1.6s cubic-bezier(0, 1.1, .6, 1),
+        filter 1.6s cubic-bezier(0, 1.1, .6, 1),
+        box-shadow 0.25s ease,
+        border-color 0.22s ease !important;
+}
+
+
+/* ══════════════════════════════════════════
+   6. 滚动条优化
+══════════════════════════════════════════ */
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+    transition: background 0.2s;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--secondary); }
+
+
+/* ══════════════════════════════════════════
+   7. 文字选中颜色优化（保留已有 ::selection，此处仅作备用）
+══════════════════════════════════════════ */
+
+/* blank.css 已有 ::selection，此处无需重复 */

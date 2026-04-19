@@ -345,3 +345,74 @@
         }
     </script>
 </div>
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     ramos-modern：Header 滚动隐藏 · 阅读进度条 · TOC 高亮
+     ══════════════════════════════════════════════════════════ -->
+<script>
+(function () {
+    'use strict';
+
+    function throttle(fn, wait) {
+        var t;
+        return function () {
+            if (!t) { t = setTimeout(function () { fn(); t = null; }, wait); }
+        };
+    }
+
+    /* 1. Header 滚动隐藏 / 显示 */
+    var header = document.querySelector('.header');
+    if (header && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        var lastY = 0;
+        window.addEventListener('scroll', throttle(function () {
+            var y = window.scrollY;
+            if (y < 80)              header.classList.remove('scroll-hidden');
+            else if (y > lastY + 12) header.classList.add('scroll-hidden');
+            else if (y < lastY - 12) header.classList.remove('scroll-hidden');
+            lastY = y;
+        }, 50), { passive: true });
+    }
+
+    /* 2. 阅读进度条（仅文章页） */
+    var progressBar = document.getElementById('progress-bar');
+    if (progressBar && document.querySelector('.post')) {
+        window.addEventListener('scroll', throttle(function () {
+            var total = document.documentElement.scrollHeight - window.innerHeight;
+            progressBar.style.width = (total > 0
+                ? Math.min(100, window.scrollY / total * 100)
+                : 0) + '%';
+        }, 30), { passive: true });
+    }
+
+    /* 3. TOC 激活章节高亮 */
+    var tocLinks = document.querySelectorAll('.toc .inner a');
+    if (tocLinks.length) {
+        var headingMap = [];
+        tocLinks.forEach(function (a) {
+            var id = (a.getAttribute('href') || '').replace(/^[^#]*#/, '');
+            var el = id && document.getElementById(id);
+            if (el) headingMap.push({ el: el, a: a });
+        });
+
+        var curActive = null;
+        var threshold = parseFloat(
+            getComputedStyle(document.documentElement).getPropertyValue('--header-height')
+        ) + 20 || 80;
+
+        var updateTOC = throttle(function () {
+            var active = (window.scrollY < 120) ? headingMap[0] : null;
+            headingMap.forEach(function (h) {
+                if (h.el.getBoundingClientRect().top <= threshold) active = h;
+            });
+            if (active === curActive) return;
+            curActive = active;
+            tocLinks.forEach(function (a) { a.classList.remove('active'); });
+            if (active) active.a.classList.add('active');
+        }, 60);
+
+        window.addEventListener('scroll', updateTOC, { passive: true });
+        updateTOC();
+    }
+})();
+</script>
