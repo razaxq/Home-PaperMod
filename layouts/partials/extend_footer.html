@@ -305,6 +305,8 @@
 
         function initFancybox() {
             Fancybox.bind("[data-fancybox]", {
+                // 关闭 Hash 插件：否则打开/关闭 lightbox 会 push/pop history，触发 SPA popstate 重新加载
+                Hash: false,
                 Carousel: {
                     transition: "slide",
                 },
@@ -487,6 +489,7 @@
     }
     var cache = new Map();
     var isNavigating = false;
+    var lastPath = location.pathname;
 
     function isInternal(a) {
         if (!a || !a.href) return false;
@@ -605,6 +608,7 @@
 
             /* pushState */
             if (push) history.pushState({ href: href }, '', href);
+            lastPath = new URL(href, location.href).pathname;
 
             /* 滚动到顶 */
             window.scrollTo(0, 0);
@@ -647,8 +651,11 @@
         navigate(a.href, true);
     }, true);
 
-    /* 浏览器前进/后退 */
+    /* 浏览器前进/后退：仅在 pathname 真的变化时才走 SPA，
+       否则只是 hash 变动（如 Fancybox 关闭、锚点跳转）会误触发重新加载 */
     window.addEventListener('popstate', function () {
+        if (location.pathname === lastPath) return;
+        lastPath = location.pathname;
         navigate(location.href, false);
     });
 
