@@ -78,6 +78,17 @@
     flex-shrink: 0;
 }
 
+/* sub_result 命中的 heading（章节面包屑）—— 把"在文章的哪一节"提示给用户 */
+#searchResults .entry-heading {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--tertiary);
+    margin: -2px 0 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 #searchResults .entry-content {
     font-weight: 400;
     font-size: 0.9rem;

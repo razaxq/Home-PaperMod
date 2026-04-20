@@ -114,14 +114,23 @@
         var title   = d.meta && d.meta.title ? d.meta.title : '(无标题)';
         var section = d.meta && d.meta.section;
         var date    = d.meta && d.meta.date;
-        var url     = d.url || '#';
+
+        // 优先拿第一个 sub_result —— Pagefind 会按得分排序，顶部就是最相关的 section。
+        // sub_result.url 已带 #heading-id，点击后经 SPA 的 hash 处理会滚到命中章节。
+        // 正文为空、或全文就一段没有任何 heading 的页面，sub_results 会是空数组，自动回退到整页。
+        var sub     = (d.sub_results && d.sub_results[0]) || null;
+        var url     = (sub && sub.url) || d.url || '#';
+        var excerpt = (sub && sub.excerpt) || d.excerpt || '';
+        // sub.title 是命中所在 heading 的文本；与主标题相同就不重复显示
+        var heading = (sub && sub.title && sub.title !== title) ? sub.title : null;
 
         return '<li class="post-entry loaded">'
             +    '<header class="entry-header">'
             +      sectionBadge(section)
             +      '<h2>' + esc(title) + '</h2>'
             +    '</header>'
-            +    '<div class="entry-content"><p>' + (d.excerpt || '') + '</p></div>'
+            +    (heading ? '<div class="entry-heading">› ' + esc(heading) + '</div>' : '')
+            +    '<div class="entry-content"><p>' + excerpt + '</p></div>'
             +    (date ? '<footer class="entry-footer"><span class="meta-date">' + esc(date) + '</span></footer>' : '')
             +    '<a href="' + esc(url) + '" aria-label="' + esc(title) + '"></a>'
             +  '</li>';

@@ -542,6 +542,18 @@
         });
     }
 
+    /* 已执行过的外链 script URL 集合 —— 用来给 executeScripts 做幂等保证。
+       旧实现用 `document.querySelector('script[src=..]')` 判断"是否已加载"，
+       但 SPA 在调用 executeScripts 之前刚做了 `oldMain.innerHTML = newMain.innerHTML`，
+       innerHTML 注入的 <script> 只是死节点（不会执行）却能被 querySelector 查到，
+       导致首次从无 MathJax 页 → 有 MathJax 页时，主脚本被误判为"已加载"而跳过。
+       这里改用 Set，种子是初始页面已存在的 [src] 脚本，之后每次真正 appendChild 时
+       把 src 记入 Set，就不会再被当成"已加载的死节点"。 */
+    var executedScriptSrcs = new Set();
+    document.querySelectorAll('script[src]').forEach(function (s) {
+        if (s.src) executedScriptSrcs.add(s.src);
+    });
+
     /* 重新执行指定容器内所有 <script>（innerHTML 注入的 script 不会自动执行） */
     function executeScripts(container) {
         var scripts = container.querySelectorAll('script');
@@ -553,8 +565,9 @@
                 newScript.setAttribute(attr.name, attr.value);
             }
             if (oldScript.src) {
-                /* 外链 script：只在未加载过时重新添加 */
-                if (!document.querySelector('script[src="' + oldScript.src + '"]')) {
+                /* 外链 script：只在真正未执行过时才追加（区别于"只是节点在 DOM 里"） */
+                if (!executedScriptSrcs.has(oldScript.src)) {
+                    executedScriptSrcs.add(oldScript.src);
                     document.head.appendChild(newScript);
                 }
             } else {
@@ -616,12 +629,11 @@
 
             /* pushState */
             if (push) history.pushState({ href: href }, '', href);
-            lastPath = new URL(href, location.href).pathname;
+            var hrefURL = new URL(href, location.href);
+            lastPath = hrefURL.pathname;
 
-            /* 滚动到顶 */
-            window.scrollTo(0, 0);
-
-            /* 清除淡出时留下的 inline 样式：
+            /* 清除淡出时留下的 inline 样式（要先于 scrollIntoView —— 否则 transform 会让
+               getBoundingClientRect 读到偏移 8px 的位置，滚完再清 transform 会出现小抖动）：
                - opacity/transform 让 main 立即回到可见位置（子元素由 CSS 默认 opacity:0 隐藏，稍后由 sequential loader 逐个 .loaded）
                - pointer-events 必须清掉，否则 main 内部的所有链接都会被穿透到 body，变成点不开 */
             mainAfter.style.transition = 'none';
@@ -631,6 +643,23 @@
             requestAnimationFrame(function () {
                 mainAfter.style.transition = '';
             });
+
+            /* 滚动：若 href 带 #hash 且新页面里能找到对应元素，滚到它；否则回顶 */
+            var scrolled = false;
+            if (hrefURL.hash) {
+                var tid;
+                try { tid = decodeURIComponent(hrefURL.hash.slice(1)); }
+                catch (_) { tid = hrefURL.hash.slice(1); }  /* 畸形编码就直接用原文 */
+                var target = tid ? document.getElementById(tid) : null;
+                if (!target) {
+                    try { target = document.querySelector(hrefURL.hash); } catch (_) { /* 非法选择器就算了 */ }
+                }
+                if (target) {
+                    target.scrollIntoView({ block: 'start' });
+                    scrolled = true;
+                }
+            }
+            if (!scrolled) window.scrollTo(0, 0);
 
             /* 重新初始化 header / progress / TOC / back-top */
             initPage();
