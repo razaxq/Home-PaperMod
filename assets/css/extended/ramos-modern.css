@@ -50,6 +50,8 @@ body:has(article.post.single) #progress-bar {
         background 0.5s ease,
         border-color 0.5s ease !important;
     will-change: transform;
+    -webkit-user-drag: none;
+    -webkit-user-select: none;
 }
 
 /* 有些主题的 body / main 用 overflow 约束会导致 sticky 失效，强制放开 */
@@ -319,21 +321,33 @@ body.dark .header {
 /* ══════════════════════════════════════════════════════
    9. 入场动画 + View Transitions 跨页面过渡
 ══════════════════════════════════════════════════════ */
-
-@media (prefers-reduced-motion: no-preference) {
-    /* 入场默认态：只把透明度降到 0，不做 translateY —— 避免刷新页面时
-       首屏元素"从下方 24px 滑上来"导致用户感觉页面往下走了一段 */
+@media (prefers-color-scheme: light) {
     .main > *,
     .post > *,
     .archive-posts > * {
-        filter: none !important;
-        -webkit-filter: none !important;
+        -webkit-filter: blur(4px) opacity(0);
+        filter: brightness(1.5) contrast(1) blur(4px) opacity(0);
         opacity: 0;
+        transform: translateY(10px);
         transition:
-            opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
-            transform 0.55s cubic-bezier(0.22, 1, 0.36, 1) !important;
+            filter 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+            transform 1.55s cubic-bezier(0.22, 1, 0.36, 1) !important;
     }
-
+}
+@media (prefers-color-scheme: dark) {
+    .main > *,
+    .post > *,
+    .archive-posts > * {
+        -webkit-filter: blur(4px) opacity(0);
+        filter: brightness(0) contrast(1) blur(4px) opacity(0);
+        opacity: 0;
+        transform: translateY(10px);
+        transition:
+            filter 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+            transform 1.55s cubic-bezier(0.22, 1, 0.36, 1) !important;
+    }
+}
+@media (prefers-reduced-motion: no-preference) {
     /* 只有被 JS 标记为 .pending 的元素（当前视口外、会滚动到时再入场）才有 translateY
        首屏直接可见的元素不走这条路径 —— 它们被 .loaded 之后只是淡入 */
     .main > *.pending,
@@ -345,8 +359,8 @@ body.dark .header {
     .main > *.loaded,
     .post > *.loaded,
     .archive-posts > *.loaded {
-        filter: none !important;
-        -webkit-filter: none !important;
+        -webkit-filter: blur(0) opacity(1);
+        filter: brightness(1) contrast(1) blur(0) opacity(1);
         opacity: 1;
         transform: translateY(0);
     }

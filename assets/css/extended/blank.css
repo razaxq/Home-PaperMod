@@ -249,44 +249,44 @@ body.dark .notice {
 /* ========== post从模糊到清晰并向上位移 ========== */
 
 @media (prefers-reduced-motion: no-preference) {
-    .archive-posts > * {
-        -webkit-filter: blur(5px) opacity(0);
-        filter: brightness(1) contrast(1) blur(4px) opacity(0);
-        transform: translateY(60px);
-        transition: transform .85s cubic-bezier(0, .6, .6, 1), filter .85s cubic-bezier(0, .5, 1, 1), background .85s cubic-bezier(0, .6, .6, 1);
-    }
+    /*.archive-posts > * {*/
+    /*    -webkit-filter: blur(5px) opacity(0);*/
+    /*    filter: brightness(1) contrast(1) blur(4px) opacity(0);*/
+    /*    transform: translateY(60px);*/
+    /*    transition: transform .85s cubic-bezier(0, .6, .6, 1), filter .85s cubic-bezier(0, .5, 1, 1), background .85s cubic-bezier(0, .6, .6, 1);*/
+    /*}*/
 
-    .archive-posts > *.loaded {
-        -webkit-filter: blur(0) opacity(1);
-        filter: brightness(1) contrast(1) blur(0) opacity(1);
-        transform: translateY(0);
-    }
+    /*.archive-posts > *.loaded {*/
+    /*    -webkit-filter: blur(0) opacity(1);*/
+    /*    filter: brightness(1) contrast(1) blur(0) opacity(1);*/
+    /*    transform: translateY(0);*/
+    /*}*/
 
-    .post > *:not(.twikoo) {
-        -webkit-filter: blur(5px) opacity(0);
-        filter: brightness(1) contrast(1) blur(4px) opacity(0);
-        transform: translateY(60px);
-        transition: transform .85s cubic-bezier(0, .6, .6, 1), filter .85s cubic-bezier(0, .5, 1, 1);
-    }
+    /*.post > *:not(.twikoo) {*/
+    /*    -webkit-filter: blur(5px) opacity(0);*/
+    /*    filter: brightness(1) contrast(1) blur(4px) opacity(0);*/
+    /*    transform: translateY(60px);*/
+    /*    transition: transform .85s cubic-bezier(0, .6, .6, 1), filter .85s cubic-bezier(0, .5, 1, 1);*/
+    /*}*/
 
-    .post > *.loaded {
-        -webkit-filter: blur(0) opacity(1);
-        filter: brightness(1) contrast(1) blur(0) opacity(1);
-        transform: translateY(0);
-    }
+    /*.post > *.loaded {*/
+    /*    -webkit-filter: blur(0) opacity(1);*/
+    /*    filter: brightness(1) contrast(1) blur(0) opacity(1);*/
+    /*    transform: translateY(0);*/
+    /*}*/
 
-    .main > * {
-        -webkit-filter: blur(5px) opacity(0);
-        filter: brightness(1) contrast(1) blur(4px) opacity(0);
-        transform: translateY(60px);
-        transition: transform 1s cubic-bezier(0, 1.1, .6, 1), filter .85s cubic-bezier(0, 1.1, .6, 1);
-    }
+    /*.main > * {*/
+    /*    -webkit-filter: blur(5px) opacity(0);*/
+    /*    filter: brightness(1) contrast(1) blur(4px) opacity(0);*/
+    /*    transform: translateY(60px);*/
+    /*    transition: transform 1s cubic-bezier(0, 1.1, .6, 1), filter .85s cubic-bezier(0, 1.1, .6, 1);*/
+    /*}*/
 
-    .main > *.loaded {
-        -webkit-filter: blur(0) opacity(1);
-        filter: brightness(1) contrast(1) blur(0) opacity(1);
-        transform: translateY(0);
-    }
+    /*.main > *.loaded {*/
+    /*    -webkit-filter: blur(0) opacity(1);*/
+    /*    filter: brightness(1) contrast(1) blur(0) opacity(1);*/
+    /*    transform: translateY(0);*/
+    /*}*/
 
 
     /* .post-content>* {
@@ -301,13 +301,13 @@ body.dark .notice {
       filter: brightness(1) contrast(1) blur(0) opacity(1);
       transform: translateY(0);
     } */
-    .unloaded {
-        pointer-events: none;
-        transition: filter .3s cubic-bezier(0, .5, .5, 1), opacity .3s cubic-bezier(0, .5, .5, 1), transform 5s cubic-bezier(0, .6, .6, 1);
-        filter: blur(10px);
-        transform: translateY(60px) !important;
-        opacity: 0 !important;
-    }
+    /*.unloaded {*/
+    /*    pointer-events: none;*/
+    /*    transition: filter .3s cubic-bezier(0, .5, .5, 1), opacity .3s cubic-bezier(0, .5, .5, 1), transform 5s cubic-bezier(0, .6, .6, 1);*/
+    /*    filter: blur(10px);*/
+    /*    transform: translateY(60px) !important;*/
+    /*    opacity: 0 !important;*/
+    /*}*/
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -489,7 +489,7 @@ article[autonumbering] .toc li a:before {
 
 .wide .toc {
     position: sticky;
-    top: var(--gap);
+    top: calc(2 * var(--gap));
     border: unset;
     background: unset;
     border-radius: unset;
