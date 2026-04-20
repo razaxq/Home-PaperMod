@@ -1,8 +1,20 @@
 {{- define "main" }}
-<article class="post single-modern" {{- if .Param "autonumbering" }} autonumbering {{- end }}>
+<article class="post single-modern"
+  {{- /* Pagefind 索引范围：除 searchHidden 的页面外，所有 single 页都参与索引 */}}
+  {{- if not .Params.searchHidden }} data-pagefind-body{{- end }}
+  {{- if .Param "autonumbering" }} autonumbering{{- end }}>
+
+  {{- /* Pagefind 元数据（不可见），供搜索结果渲染 section 徽章、日期、年份筛选 */}}
+  {{- if not .Params.searchHidden }}
+  {{- with .Section }}<span data-pagefind-meta="section:{{ . }}" hidden></span>{{ end }}
+  {{- if not .Date.IsZero }}
+  <span data-pagefind-meta="date:{{ .Date.Format "2006.1.2" }}" hidden></span>
+  <span data-pagefind-filter="year:{{ .Date.Format "2006" }}" hidden></span>
+  {{- end }}
+  {{- end }}
 
   <header class="post-header modern-header">
-    {{ partial "breadcrumbs.html" . }}
+    <div data-pagefind-ignore>{{ partial "breadcrumbs.html" . }}</div>
 
     <h1 class="post-title entry-hint-parent">
       {{ .Title }}
@@ -21,7 +33,7 @@
     {{- end }}
 
     {{- if not (.Param "hideMeta") }}
-    <div class="post-meta modern-meta">
+    <div class="post-meta modern-meta" data-pagefind-ignore>
       {{- /* 作者 */ -}}
       {{- with (partial "author.html" .) }}
         <span class="meta-author">{{ . }}</span>
@@ -70,7 +82,7 @@
   </div>
   {{- end }}
 
-  <footer class="post-footer modern-footer">
+  <footer class="post-footer modern-footer" data-pagefind-ignore>
     {{- if (.Param "ShowPostNavLinks") }}
     {{- partial "post_nav_links.html" . }}
     {{- end }}
@@ -80,7 +92,7 @@
   </footer>
 
   {{- if (.Param "comments") }}
-  {{ partial "twikoo.html" . }}
+  <div data-pagefind-ignore>{{ partial "twikoo.html" . }}</div>
   {{- end }}
 </article>
 

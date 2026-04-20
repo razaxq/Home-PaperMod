@@ -61,4 +61,161 @@
 {{- end }}
 {{- end }}
 
+{{- /* ════════════════════════════════════════════════════════════
+       Pagefind 搜索逻辑
+       - 放在 <main> 内部，SPA 切页后 executeScripts() 会重跑本块
+       - 用 IIFE 隔离作用域，复跑不会污染全局
+       ════════════════════════════════════════════════════════════ */}}
+<script>
+(function () {
+    'use strict';
+
+    var input   = document.getElementById('searchInput');
+    var results = document.getElementById('searchResults');
+    if (!input || !results) return;
+
+    // SPA 重跑时清掉上次的结果与焦点态
+    results.innerHTML = '';
+
+    // section → 中文显示名
+    var SECTION_LABEL = {
+        article: '文章',
+        journal: '手记',
+        about:   '关于',
+        shop:    '商店'
+    };
+
+    var pagefindPromise = null;
+    function loadPagefind() {
+        if (!pagefindPromise) {
+            // Pagefind 在构建期产出到 /pagefind/pagefind.js；动态 import 以便惰性加载
+            pagefindPromise = import('/pagefind/pagefind.js').then(function (pf) {
+                pf.options({ excerptLength: 30 });
+                return pf;
+            });
+        }
+        return pagefindPromise;
+    }
+
+    // HTML 转义（title / 日期等非 excerpt 字段走这个；excerpt 已是带 <mark> 的安全 HTML）
+    function esc(s) {
+        return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function sectionBadge(section) {
+        if (!section) return '';
+        var label = SECTION_LABEL[section] || section;
+        return '<span class="entry-section entry-section-' + esc(section) + '">' + esc(label) + '</span>';
+    }
+
+    function renderResult(d) {
+        var title   = d.meta && d.meta.title ? d.meta.title : '(无标题)';
+        var section = d.meta && d.meta.section;
+        var date    = d.meta && d.meta.date;
+        var url     = d.url || '#';
+
+        return '<li class="post-entry loaded">'
+            +    '<header class="entry-header">'
+            +      sectionBadge(section)
+            +      '<h2>' + esc(title) + '</h2>'
+            +    '</header>'
+            +    '<div class="entry-content"><p>' + (d.excerpt || '') + '</p></div>'
+            +    (date ? '<footer class="entry-footer"><span class="meta-date">' + esc(date) + '</span></footer>' : '')
+            +    '<a href="' + esc(url) + '" aria-label="' + esc(title) + '"></a>'
+            +  '</li>';
+    }
+
+    // 竞态保护：用户快速输入时，旧请求的结果不应覆盖新请求
+    var queryToken = 0;
+    var debounceId = null;
+
+    function schedule(q) {
+        clearTimeout(debounceId);
+        if (!q) {
+            results.innerHTML = '';
+            return;
+        }
+        debounceId = setTimeout(function () { runSearch(q); }, 120);
+    }
+
+    async function runSearch(q) {
+        var myToken = ++queryToken;
+        try {
+            var pf = await loadPagefind();
+            var search = await pf.search(q);
+            if (myToken !== queryToken) return;  // 已被新查询取代
+
+            if (!search.results.length) {
+                results.innerHTML = '<li class="post-entry loaded entry-empty"><div class="entry-content"><p>没找到匹配的内容。换个词试试？</p></div></li>';
+                return;
+            }
+
+            // 只取前 20 条，再并发拉 data（片段）
+            var top = search.results.slice(0, 20);
+            var datas = await Promise.all(top.map(function (r) { return r.data(); }));
+            if (myToken !== queryToken) return;
+
+            results.innerHTML = datas.map(renderResult).join('');
+        } catch (err) {
+            console.error('[pagefind] search failed:', err);
+            results.innerHTML = '<li class="post-entry loaded entry-empty"><div class="entry-content"><p>搜索索引加载失败，刷新页面再试一下？</p></div></li>';
+        }
+    }
+
+    input.addEventListener('input', function () { schedule(this.value.trim()); });
+    input.addEventListener('search', function () { if (!this.value) { results.innerHTML = ''; queryToken++; } });
+
+    // 预热：首次聚焦输入框时开始加载 pagefind.js，输入时不用等网络
+    input.addEventListener('focus', loadPagefind, { once: true });
+
+    /* ──── 键盘导航：↑ ↓ 在结果间移动，→ 打开，Esc 清空 ──── */
+    function focusEntry(li) {
+        var current = results.querySelector('.focus');
+        if (current) current.classList.remove('focus');
+        if (li) {
+            li.classList.add('focus');
+            var a = li.querySelector('a');
+            if (a) a.focus();
+        } else {
+            input.focus();
+        }
+    }
+
+    // 用 onkeydown 赋值（而非 addEventListener）—— SPA 重访搜索页时，新脚本的赋值会
+    // 覆盖旧的，避免处理器堆积。切走到别的页面后，新页面的脚本会再次赋值或不赋值，
+    // 即便旧处理器残留也会因为 #searchInput 不存在而早退。
+    document.onkeydown = function (e) {
+        if (!document.getElementById('searchInput')) return;
+
+        var key = e.key;
+        if (key === 'Escape') {
+            input.value = '';
+            results.innerHTML = '';
+            queryToken++;
+            input.focus();
+            return;
+        }
+        if (!results.children.length) return;
+
+        var items  = results.querySelectorAll('li');
+        var active = results.querySelector('.focus');
+        var idx    = active ? Array.prototype.indexOf.call(items, active) : -1;
+
+        if (key === 'ArrowDown') {
+            e.preventDefault();
+            focusEntry(items[Math.min(idx + 1, items.length - 1)]);
+        } else if (key === 'ArrowUp') {
+            e.preventDefault();
+            if (idx <= 0) focusEntry(null);
+            else focusEntry(items[idx - 1]);
+        } else if (key === 'ArrowRight' && active) {
+            var a = active.querySelector('a');
+            if (a) a.click();
+        }
+    };
+})();
+</script>
+
 {{- end }}{{/* end main */}}
