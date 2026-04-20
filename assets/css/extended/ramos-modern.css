@@ -328,10 +328,10 @@ body.dark .header {
         -webkit-filter: blur(4px) opacity(0);
         filter: brightness(1.5) contrast(1) blur(4px) opacity(0);
         opacity: 0;
-        transform: translateY(10px);
+        transform: translateY(40px);
         transition:
-            filter 0.35s cubic-bezier(0.22, 1, 0.36, 1),
-            transform 1.55s cubic-bezier(0.22, 1, 0.36, 1) !important;
+            filter 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+            transform 0.55s cubic-bezier(0.22, 1, 0.36, 1) !important;
     }
 }
 @media (prefers-color-scheme: dark) {
@@ -341,10 +341,10 @@ body.dark .header {
         -webkit-filter: blur(4px) opacity(0);
         filter: brightness(0) contrast(1) blur(4px) opacity(0);
         opacity: 0;
-        transform: translateY(10px);
+        transform: translateY(40px);
         transition:
-            filter 0.35s cubic-bezier(0.22, 1, 0.36, 1),
-            transform 1.55s cubic-bezier(0.22, 1, 0.36, 1) !important;
+            filter 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+            transform 0.55s cubic-bezier(0.22, 1, 0.36, 1) !important;
     }
 }
 @media (prefers-reduced-motion: no-preference) {
