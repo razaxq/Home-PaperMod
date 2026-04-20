@@ -1,0 +1,133 @@
+{{- /*
+  Shiki 客户端高亮加载器（CDN 版）
+
+  - Hugo render-codeblock hook 只输出 <pre class="shiki-pending" data-lang="X"><code>原始代码</code></pre>
+  - 此脚本在首屏 & SPA 切页后扫描 .shiki-pending，按需加载语言/主题并渲染
+  - 双主题：catppuccin-latte (浅) + catppuccin-macchiato (深)，通过 CSS 变量 --shiki-light/--shiki-dark 切换
+  - 渲染器单例，跨 SPA 切页复用；新语言在命中时按需 loadLanguage
+*/ -}}
+<script type="module">
+    const THEMES = { light: 'catppuccin-latte', dark: 'catppuccin-macchiato' };
+    const SHIKI_URL = 'https://esm.sh/shiki@3.0.0';
+
+    /** @type {any} */
+    let highlighterPromise = null;
+    /** @type {Set<string>} */
+    const loadedLangs = new Set();
+
+    async function getHighlighter(initialLangs) {
+        if (!highlighterPromise) {
+            highlighterPromise = (async () => {
+                const { createHighlighter } = await import(SHIKI_URL);
+                const hl = await createHighlighter({
+                    themes: [THEMES.light, THEMES.dark],
+                    langs: initialLangs,
+                });
+                initialLangs.forEach(l => loadedLangs.add(l));
+                return hl;
+            })();
+        }
+        return highlighterPromise;
+    }
+
+    /**
+     * 扫描 root 下所有 pre.shiki-pending 并用 Shiki 渲染
+     * @param {ParentNode} root
+     */
+    async function renderShiki(root) {
+        const pendings = root.querySelectorAll('pre.shiki-pending');
+        if (pendings.length === 0) return;
+
+        // 先收集语言
+        const wanted = new Set();
+        pendings.forEach(p => {
+            const l = (p.dataset.lang || 'plaintext').trim().toLowerCase();
+            wanted.add(l);
+        });
+        const langs = [...wanted];
+
+        let highlighter;
+        try {
+            highlighter = await getHighlighter(langs);
+        } catch (e) {
+            console.warn('[shiki] 初始化失败', e);
+            // 兜底：去掉 pending 状态，让 CSS fallback 至少呈现等宽代码块
+            pendings.forEach(p => {
+                p.classList.remove('shiki-pending');
+                p.classList.add('shiki-fallback');
+            });
+            return;
+        }
+
+        // 按需加载新增语言
+        const missing = langs.filter(l => !loadedLangs.has(l) && l !== 'plaintext');
+        if (missing.length) {
+            await Promise.all(missing.map(async (l) => {
+                try {
+                    await highlighter.loadLanguage(l);
+                    loadedLangs.add(l);
+                } catch {
+                    // 未知语言，忽略；渲染时会回退到 plaintext
+                }
+            }));
+        }
+
+        const available = new Set(highlighter.getLoadedLanguages());
+        available.add('plaintext');
+
+        pendings.forEach(pre => {
+            const lang0 = (pre.dataset.lang || 'plaintext').trim().toLowerCase();
+            const lang = available.has(lang0) ? lang0 : 'plaintext';
+            const codeEl = pre.querySelector('code');
+            const code = codeEl ? codeEl.textContent : pre.textContent;
+            try {
+                const html = highlighter.codeToHtml(code, {
+                    lang,
+                    themes: THEMES,
+                    defaultColor: false, // 输出 --shiki-light / --shiki-dark CSS 变量
+                });
+                // 用一个临时容器解析，把新生成的 <pre class="shiki ..."> 替换掉占位符
+                const tmp = document.createElement('div');
+                tmp.innerHTML = html;
+                const newPre = tmp.firstElementChild;
+                if (newPre) {
+                    // 保留 data-lang，方便 CSS / 调试
+                    newPre.dataset.lang = lang0;
+                    pre.replaceWith(newPre);
+                } else {
+                    pre.classList.remove('shiki-pending');
+                }
+            } catch (e) {
+                console.warn('[shiki] 渲染失败，lang=', lang0, e);
+                pre.classList.remove('shiki-pending');
+                pre.classList.add('shiki-fallback');
+            }
+        });
+    }
+
+    function run(root) {
+        // 空闲时跑，不阻塞 LCP
+        const kick = () => renderShiki(root || document).catch(e => console.warn('[shiki]', e));
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(kick, { timeout: 1500 });
+        } else {
+            setTimeout(kick, 0);
+        }
+    }
+
+    // 首屏
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => run(document));
+    } else {
+        run(document);
+    }
+
+    // SPA 切页后重新渲染新 main 内的占位符
+    document.addEventListener('spa:loaded', () => {
+        const main = document.querySelector('.main') || document;
+        run(main);
+    });
+
+    // 暴露全局接口，方便其它脚本（如代码块 tab 切换）主动触发
+    window.__shikiRender = run;
+</script>

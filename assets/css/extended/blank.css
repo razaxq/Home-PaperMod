@@ -331,7 +331,6 @@ body.dark .notice {
 @media (prefers-color-scheme: dark) {
     .codetab__links {
         background-color: #161B22;
-        outline: #30363D solid 1px;
     }
 
     .codetab__links button {
@@ -351,8 +350,6 @@ body.dark .notice {
 
 @media (prefers-color-scheme: light) {
     .codetab__links {
-        background-color: #FFF;
-        outline: #e5e7eb solid 1px;
         background-color: #f6f8fa;
     }
 
@@ -380,7 +377,7 @@ body.dark .notice {
     border-radius: var(--radius) var(--radius) 0 0;
     overflow: auto;
     user-select: none;
-    font-family: 'Maple Mono';
+    font-family: var(--mono);
     font-size: smaller;
     font-weight: 400;
     display: flex;
@@ -413,9 +410,9 @@ body.dark .notice {
 }
 
 
-/* ========== 代码字体：Maple Mono ========== */
+/* ========== 代码字体：Maple Mono（统一到 --mono 变量，见 theme-vars.css）========== */
 code {
-    font-family: 'Maple Mono', Monaco, Consolas, 'Courier New', monospace;
+    font-family: var(--mono);
 }
 
 /* ========= 文章和目录自动编号（从二级标题开始）============ */

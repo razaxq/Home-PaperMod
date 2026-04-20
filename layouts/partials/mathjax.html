@@ -1,32 +1,56 @@
 <script async id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-<script>    
-window.MathJax = {
-  tex: {
-    packages: {'[+]': ['AMSmath', 'base']},     // extensions to use
-    inlineMath: [              // start/end delimiter pairs for in-line math
-      ['$', '$'],
-      ['\\(', '\\)']
-    ],
-    displayMath: [             // start/end delimiter pairs for display math
-      ['$$', '$$'],
-      ['\\[', '\\]']
-    ],
-    processEscapes: true,      // use \$ to produce a literal dollar sign
-    processEnvironments: true, // process \begin{xxx}...\end{xxx} outside math mode
-    processRefs: true,         // process \ref{...} outside of math mode
-    digits: /^(?:[0-9]+(?:\{,\}[0-9]{3})*(?:\.[0-9]*)?|\.[0-9]+)/,
-                               // pattern for recognizing numbers
-    tags: 'none',              // or 'ams' or 'all'
-    tagSide: 'right',          // side for \tag macros
-    tagIndent: '0.8em',        // amount to indent tags
-    useLabelIds: true,         // use label name rather than tag for ids
-    maxMacros: 10000,          // maximum number of macro substitutions per expression
-    maxBuffer: 5 * 1024,       // maximum size for the internal TeX string (5K)
-    baseURL:                   // URL for use with links to tags (when there is a <base> tag in effect)
-       (document.getElementsByTagName('base').length === 0) ?
-        '' : String(document.location).replace(/#.*$/, ''),
-    formatError:               // function called when TeX syntax errors occur
-        (jax, err) => jax.formatError(err)
-  }
-};
+<script>
+(function () {
+    /* SPA 切页 / partial 被重新注入时，主动扫描新 main 区域的公式。
+       MathJax 没初始化完成（typesetPromise 还不存在）时直接跳过 ——
+       首次加载时 MathJax 主脚本会自己 auto-typeset 整个 document，无需重复调用。 */
+    function rerender() {
+        if (window.MathJax && window.MathJax.typesetPromise) {
+            var main = document.querySelector('.main') || document.body;
+            window.MathJax.typesetPromise([main]).catch(function (e) {
+                console.warn('[mathjax] typeset failed', e);
+            });
+        }
+    }
+
+    if (!window.__mathjaxConfigured) {
+        /* 首次：只设置配置，挂一次 SPA 监听器 */
+        window.__mathjaxConfigured = true;
+        window.MathJax = {
+            tex: {
+                packages: {'[+]': ['AMSmath', 'base']},
+                inlineMath: [
+                    ['$', '$'],
+                    ['\\(', '\\)']
+                ],
+                displayMath: [
+                    ['$$', '$$'],
+                    ['\\[', '\\]']
+                ],
+                processEscapes: true,
+                processEnvironments: true,
+                processRefs: true,
+                digits: /^(?:[0-9]+(?:\{,\}[0-9]{3})*(?:\.[0-9]*)?|\.[0-9]+)/,
+                tags: 'none',
+                tagSide: 'right',
+                tagIndent: '0.8em',
+                useLabelIds: true,
+                maxMacros: 10000,
+                maxBuffer: 5 * 1024,
+                baseURL:
+                    (document.getElementsByTagName('base').length === 0)
+                        ? ''
+                        : String(document.location).replace(/#.*$/, ''),
+                formatError: function (jax, err) { return jax.formatError(err); }
+            }
+        };
+        /* 监听器只挂一次，任何 SPA 切页都尝试 typeset（到没公式的页面只是扫一遍 DOM，
+           对中等大小文章是 1ms 级别，无感） */
+        document.addEventListener('spa:loaded', rerender);
+    } else {
+        /* 这段分支意味着 MathJax 早已初始化，partial 又被重新注入 ——
+           典型场景：SPA 从无公式页切到有公式页，公式内容刚进 DOM，立刻 typeset 一次 */
+        rerender();
+    }
+})();
 </script>

@@ -21,6 +21,9 @@
     --accent: #67c23a;
     --accent-hover: #6cee2b;
     --selection-bg: #67c23ae0;
+
+    /* 等宽字体栈：代码块 / 行内 code / 代码 tab bar 统一使用 */
+    --mono: 'Maple Mono', Monaco, Consolas, 'Courier New', monospace;
 }
 
 .dark {

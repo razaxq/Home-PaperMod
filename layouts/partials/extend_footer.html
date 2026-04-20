@@ -216,22 +216,34 @@
     <div>
         <script type="module">
             // 复制按钮初始化
+            // 兼容两种结构：
+            //   - 旧 Chroma：parent = .highlight > .chroma > ...，内部有两个 <code>（行号 + 内容），取 [1]
+            //   - 新 Shiki： parent = pre.shiki-pending / pre.shiki，只有一个 <code>
+            // 统一策略：取最后一个 <code> 的 innerText —— 两种结构下都是"真正的代码内容"。
+            // 注意：点击时现场读 textContent，以避开 Shiki 异步渲染把 parent 换掉的孤儿引用问题。
             document.querySelectorAll('.copyButton').forEach(copyButton => {
-                let parent = copyButton.parentElement?.nextElementSibling;
-                if (!parent) return; // 避免 parent 为 null 时出错
+                const links = copyButton.parentElement;
+                if (!links) return;
 
-                let codeElements = parent.querySelectorAll('code');
-                if (codeElements.length < 2) return; // 避免访问不存在的索引
+                copyButton.addEventListener('click', () => {
+                    // 现场找 —— tab 切换 / Shiki 渲染后 DOM 会变
+                    const container = links.parentElement; // .codetab
+                    if (!container) return;
 
-                let code = codeElements[1].innerText.trim().replace(/\n{2}/g, '\n');
+                    // 优先找当前 active 的 codetab__content（多 tab 场景）；
+                    // 没有的话就拿 .codetab 下紧跟着 .codetab__links 的 pre
+                    let codeHost = container.querySelector('.codetab__content.active') || links.nextElementSibling;
+                    if (!codeHost) return;
 
-                if (code) {
-                    copyButton.addEventListener('click', () => {
-                        if (navigator.clipboard) {
-                            navigator.clipboard.writeText(code)
-                        }
-                    });
-                }
+                    const codes = codeHost.querySelectorAll('code');
+                    if (codes.length === 0) return;
+                    const codeEl = codes[codes.length - 1];
+                    const code = codeEl.innerText.trim().replace(/\n{2}/g, '\n');
+
+                    if (code && navigator.clipboard) {
+                        navigator.clipboard.writeText(code);
+                    }
+                });
             });
 
             // ========================== codes ==========================
@@ -257,7 +269,8 @@
 
                 codetabLinks.forEach(function (link, index, self) {
                     link.onclick = function (e) {
-                        // 标签页切换
+                        // 标签页切换（复制按键不再在这里重绑 —— 初始化时的 click handler
+                        //   会在点击时现场查找 .codetab__content.active 下的 code，自动跟随当前 tab）
                         for (let i = 0; i < self.length; ++i) {
                             if (index === parseInt(i, 10)) {
                                 if (!self[i].classList.contains('active')) {
@@ -273,33 +286,6 @@
                                     codetabContents[i].classList.remove('active');
                                     codetabContents[i].style.display = 'none';
                                 }
-                            }
-                        }
-                        // 复制按键切换
-                        const codeNodes = containerElem.querySelectorAll('.codetab__content.active code');
-                        let codeText = '';
-                        if (codeNodes.length > 1) {
-                            codeText = codeNodes[1].innerText;
-                        } else if (codeNodes.length === 1) {
-                            codeText = codeNodes[0].innerText;
-                        }
-                        codeText = codeText ? codeText.replace(/\n{2}/g, '\n') : '';
-
-                        if (codeText) {
-                            let copyButton = containerElem.querySelectorAll('.copyButton')[0];
-                            if (copyButton) {
-                                // 克隆copyButton并替换它自己来移除所有事件监听器
-                                var newButton = copyButton.cloneNode(true);
-                                copyButton.parentNode.replaceChild(newButton, copyButton);
-
-                                // 在新的copyButton上添加事件监听器
-                                newButton.addEventListener('click', function () {
-                                    if (navigator.clipboard) {
-                                        navigator.clipboard.writeText(codeText);
-                                    }
-                                });
-                                // 更新copyButton变量引用到新的按钮，以便继续使用它
-                                copyButton = newButton;
                             }
                         }
                     }

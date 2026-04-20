@@ -1,0 +1,120 @@
+/* ============================================================
+   Shiki 代码高亮样式
+   - 占位符（未渲染 & fallback）：shiki-pending / shiki-fallback
+   - 正式：.shiki（由 Shiki 输出），双主题通过 CSS 变量切换
+   ============================================================ */
+
+/* ---------------- 占位符 / fallback ---------------- */
+pre.shiki-pending,
+pre.shiki-fallback,
+pre.shiki {
+    margin: 0;
+    padding: 12px 14px;
+    overflow-x: auto;
+    border-radius: 0 0 var(--radius) var(--radius);
+    font-family: var(--mono);
+    font-size: 0.88em;
+    line-height: 1.55;
+    tab-size: 4;
+    -moz-tab-size: 4;
+}
+
+pre.shiki-pending > code,
+pre.shiki-fallback > code,
+pre.shiki > code {
+    display: block;
+    background: transparent !important;
+    padding: 0;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    white-space: pre;
+}
+
+/* 占位态/兜底态：使用站点浅色/深色背景，避免 Shiki 未加载时的裸文本 */
+pre.shiki-pending,
+pre.shiki-fallback {
+    background-color: #f5f5f7;
+    color: #4c4f69;
+}
+
+@media (prefers-color-scheme: dark) {
+    pre.shiki-pending,
+    pre.shiki-fallback {
+        background-color: #24273a;
+        color: #cad3f5;
+    }
+}
+
+/* ---------------- Shiki 正式样式 ---------------- */
+/* Shiki 输出格式（defaultColor: false）：
+     <pre class="shiki shiki-themes catppuccin-latte catppuccin-macchiato"
+          style="--shiki-light:#XX;--shiki-light-bg:#XX;--shiki-dark:#XX;--shiki-dark-bg:#XX">
+       <code>
+         <span class="line">
+           <span style="--shiki-light:#XX;--shiki-dark:#XX">token</span>
+         </span>
+       </code>
+     </pre>
+   我们在这里做"跟随系统配色"的切换。                                         */
+
+pre.shiki {
+    background-color: var(--shiki-light-bg) !important;
+    color: var(--shiki-light);
+}
+
+pre.shiki span {
+    color: var(--shiki-light);
+    background-color: var(--shiki-light-bg, transparent);
+}
+
+/* 系统深色 */
+@media (prefers-color-scheme: dark) {
+    pre.shiki {
+        background-color: var(--shiki-dark-bg) !important;
+        color: var(--shiki-dark);
+    }
+
+    pre.shiki span {
+        color: var(--shiki-dark);
+        background-color: var(--shiki-dark-bg, transparent);
+    }
+}
+
+/* 站点手动切换主题（body.dark）时也跟上 —— 优先级高于 @media */
+body.dark pre.shiki {
+    background-color: var(--shiki-dark-bg) !important;
+    color: var(--shiki-dark);
+}
+
+body.dark pre.shiki span {
+    color: var(--shiki-dark);
+    background-color: var(--shiki-dark-bg, transparent);
+}
+
+/* 行（Shiki 给每行 token 包了 .line） */
+pre.shiki .line {
+    display: inline-block;
+    width: 100%;
+    min-height: 1em;
+}
+
+/* 空行不塌陷 */
+pre.shiki .line:empty::before {
+    content: ' ';
+}
+
+/* ---------------- 与 .codetab 外壳衔接 ---------------- */
+/* codetab 已经有 top 圆角 + padding，这里的 pre 只需要底部圆角 */
+.codetab > pre.shiki-pending,
+.codetab > pre.shiki-fallback,
+.codetab > pre.shiki {
+    border-radius: 0 0 var(--radius) var(--radius);
+}
+
+/* codes shortcode 的标签切换：未 active 的 .codetab__content 被 display:none */
+.codetab__content pre.shiki-pending,
+.codetab__content pre.shiki-fallback,
+.codetab__content pre.shiki {
+    border-radius: 0 0 var(--radius) var(--radius);
+}
