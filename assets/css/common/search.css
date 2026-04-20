@@ -82,7 +82,6 @@
 #searchResults .entry-heading {
     font-size: 0.78rem;
     font-weight: 500;
-    color: var(--tertiary);
     margin: -2px 0 4px;
     white-space: nowrap;
     overflow: hidden;
