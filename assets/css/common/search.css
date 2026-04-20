@@ -107,7 +107,6 @@
 #searchResults .entry-footer {
     margin-top: 6px;
     font-size: 0.75rem;
-    color: var(--tertiary);
 }
 
 #searchResults .entry-footer .meta-date {
