@@ -153,16 +153,39 @@
         var myToken = ++queryToken;
         try {
             var pf = await loadPagefind();
-            var search = await pf.search(q);
+
+            // 中文查询的痛点：Pagefind 走 CJK 分词，查询端和索引端分词不一致时，
+            // 即便原文里明明有这段字，token 搜索也会漏掉。双路合并兜底：
+            //   1) Phrase 搜索（引号包裹）—— 要求连续子串命中，解决"贴一段原文反而搜不到"
+            //   2) Token 搜索（原始查询）—— 保留 Pagefind 默认分词召回，兜住错字 / 近义
+            //   3) 合并去重，phrase 命中排前
+            // 若用户自己写了 Pagefind 操作符（"..." / + / -），就不再包装，按原样透传。
+            var hasOperator = /["+\-]/.test(q);
+            var searches = hasOperator
+                ? [pf.search(q)]
+                : [pf.search('"' + q + '"'), pf.search(q)];
+
+            var responses = await Promise.all(searches);
             if (myToken !== queryToken) return;  // 已被新查询取代
 
-            if (!search.results.length) {
+            var merged = [];
+            var seen = Object.create(null);
+            responses.forEach(function (resp) {
+                (resp && resp.results || []).forEach(function (hit) {
+                    if (!seen[hit.id]) {
+                        seen[hit.id] = true;
+                        merged.push(hit);
+                    }
+                });
+            });
+
+            if (!merged.length) {
                 results.innerHTML = '<li class="post-entry loaded entry-empty"><div class="entry-content"><p>没找到匹配的内容。换个词试试？</p></div></li>';
                 return;
             }
 
             // 只取前 20 条，再并发拉 data（片段）
-            var top = search.results.slice(0, 20);
+            var top = merged.slice(0, 20);
             var datas = await Promise.all(top.map(function (r) { return r.data(); }));
             if (myToken !== queryToken) return;
 

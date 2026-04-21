@@ -1,2 +1,4 @@
-{{- /* formats .Content headings by adding an anchor */ -}}
-{{ . | replaceRE "(<h[1-6] id=\"([^\"]+)\".+)(</h[1-6]+>)" "${1}<a hidden class=\"anchor\" aria-hidden=\"true\" href=\"#${2}\">#</a>${3}" | safeHTML }}
+{{- /* formats .Content headings by adding an anchor.
+       anchor 标的 `data-pagefind-ignore` —— 否则 Pagefind 提取 heading 文本做 sub_result.title 时
+       会把这个 hidden <a> 里的 `#` 一并带上，搜索结果里标题变成 "激活#" 这种。 */ -}}
+{{ . | replaceRE "(<h[1-6] id=\"([^\"]+)\".+)(</h[1-6]+>)" "${1}<a hidden data-pagefind-ignore class=\"anchor\" aria-hidden=\"true\" href=\"#${2}\">#</a>${3}" | safeHTML }}
