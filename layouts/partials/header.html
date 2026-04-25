@@ -91,7 +91,7 @@
             <li>
                 <a href="{{ .URL | absLangURL }}" title="{{ .Title | default .Name }} {{- cond $is_search (" (Alt + /)" | safeHTMLAttr) ("" | safeHTMLAttr ) }}"
                 {{- cond $is_search (" accesskey=/" | safeHTMLAttr) ("" | safeHTMLAttr ) }}>
-                    <span {{- if eq $menu_item_url $page_url }} class="active" {{- end }}>
+                    <span {{- if eq $menu_item_url $page_url }} class="active menu-item-text" {{- else }} class="menu-item-text" {{- end }}{{ range $k, $v := .Params }} data-{{ $k }}="{{ $v }}"{{ end }}>
                         {{- .Pre }}
                         {{- .Name -}}
                         {{ .Post -}}
@@ -109,5 +109,20 @@
             {{- end }}
         </ul>
     </nav>
+    <script>
+        (function() {
+            var userLang = navigator.language || navigator.userLanguage || '';
+            if (!userLang || !userLang.toLowerCase().startsWith('zh')) {
+                var langCode = userLang ? userLang.split('-')[0].toLowerCase() : 'en';
+                var menuItems = document.querySelectorAll('.menu-item-text');
+                menuItems.forEach(function(item) {
+                    var targetText = item.getAttribute('data-' + langCode) || item.getAttribute('data-en');
+                    if (targetText) {
+                        item.textContent = targetText;
+                    }
+                });
+            }
+        })();
+    </script>
 </header>
 
