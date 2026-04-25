@@ -1,6 +1,6 @@
 <div id="tcomment"></div>
 <noscript>
-    <link href="/assets/Twikoo/twikoo.min.css" rel="stylesheet">
+    <link href="/assets/Twikoo/twikoo@1.7.7.css" rel="stylesheet">
 </noscript>
 <script>
     (function () {
@@ -24,13 +24,13 @@
 
         // 并行加载脚本和一言数据
         Promise.all([
-            loadScript('/assets/Twikoo/twikoo.nocss.min.js'),
+            loadScript('/assets/Twikoo/twikoo@1.7.7.nocss.js'),
             fetch('https://v1.hitokoto.cn')
                 .then(r => r.json())
                 .then(d => d.hitokoto)
                 .catch(() => '')
         ]).then(([, hitokotoText]) => {
-            loadStyle('/assets/Twikoo/twikoo.min.css');
+            loadStyle('/assets/Twikoo/twikoo@1.7.7.css');
             // 初始化评论
             twikoo.init({
                 envId: "https://twikoo.dtft.net/",
