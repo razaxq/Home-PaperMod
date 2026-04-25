@@ -4,8 +4,13 @@
             style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); background-color: #000;"
     >
         {{- range .Params }}
-        {{- with $.Page.Resources.GetMatch . }}
+        {{- $src := . }}
+        {{- if or (hasPrefix $src "http://") (hasPrefix $src "https://") (hasPrefix $src "//") }}
+        <source src="{{ $src }}" type="{{ if strings.HasSuffix $src ".mp4" }}video/mp4{{ else if strings.HasSuffix $src ".mov" }}video/quicktime{{ else if strings.HasSuffix $src ".webm" }}video/webm{{ else }}video/mp4{{ end }}">
+        {{- else }}
+        {{- with $.Page.Resources.GetMatch $src }}
         <source src="{{ .RelPermalink }}" type="{{ if strings.HasSuffix .Name ".mp4" }}video/mp4{{ else if strings.HasSuffix .Name ".mov" }}video/quicktime{{ else if strings.HasSuffix .Name ".webm" }}video/webm{{ else }}video/mp4{{ end }}">
+        {{- end }}
         {{- end }}
         {{- end }}
         您的浏览器不支持视频播放。
