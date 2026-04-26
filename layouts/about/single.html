@@ -422,8 +422,13 @@
     if (frog) {
         frog.addEventListener('click', function () {
             if (reduceMotion) return;
+            if (frog.classList.contains('bounce')) return;
             frog.classList.add('bounce');
-            setTimeout(function () { frog.classList.remove('bounce'); }, 600);
+        });
+        frog.addEventListener('animationend', function (e) {
+            if (e.animationName === 'about-frog-bounce') {
+                frog.classList.remove('bounce');
+            }
         });
     }
 
