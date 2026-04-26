@@ -1,0 +1,584 @@
+{{- define "main" }}
+{{- $en := eq .Language.Lang "en" -}}
+{{- $L := cond $en "en" "zh" -}}
+
+{{- /* ────── 数据 ────── */ -}}
+
+{{- $now := slice
+  (dict "emoji" "🔬"
+        "label_zh" "研究中"     "label_en" "Researching"
+        "value_zh" "COVID-19 X 光影像分割（基于 LViT 改进）"
+        "value_en" "COVID-19 X-ray segmentation (LViT-derived)")
+  (dict "emoji" "🛠"
+        "label_zh" "写脚本"     "label_en" "Scripting"
+        "value_zh" "EasyTier 1500 行 POSIX sh 管理脚本"
+        "value_en" "1500-line POSIX sh manager for EasyTier")
+  (dict "emoji" "📚"
+        "label_zh" "阅读中"     "label_en" "Reading"
+        "value_zh" "《Designing Data-Intensive Applications》"
+        "value_en" "Designing Data-Intensive Applications")
+  (dict "emoji" "🎮"
+        "label_zh" "刚下线"     "label_en" "Just played"
+        "value_zh" "CS2 · 段位 LE，差一点就 SMFC"
+        "value_en" "CS2 · Legendary Eagle, one win shy of SMFC")
+  (dict "emoji" "🛵"
+        "label_zh" "最近兴趣"   "label_en" "Currently into"
+        "value_zh" "电动滑板车 / E-bike 选购"
+        "value_en" "shopping for an e-scooter / e-bike")
+-}}
+
+{{- $interests := slice
+  (dict "emoji" "🐧"
+        "title_zh" "家里云董事"
+        "title_en" "Homelab director"
+        "desc_zh"  "Proxmox PVE + ZFS，配 Cloudflare Tunnel 做穿透。一台 NUC 跑了二十多个服务。"
+        "desc_en"  "Proxmox PVE + ZFS with Cloudflare Tunnel for ingress. One NUC quietly running 20-something services.")
+  (dict "emoji" "🛠"
+        "title_zh" "命令行生存"
+        "title_en" "Command-line survivor"
+        "desc_zh"  "Fedora / Debian 长期用户，重度依赖 Zellij 拆终端。bash 写多了开始迷恋 POSIX sh。"
+        "desc_en"  "Long-time Fedora / Debian user, addicted to Zellij splits. Wrote enough bash that POSIX sh feels like a vibe.")
+  (dict "emoji" "🎮"
+        "title_zh" "打电脑游戏"
+        "title_en" "PC gamer"
+        "desc_zh"  "CS、APEX、R6、守望先锋。AOC 4K160Hz + 5800X + 7900XTX 的小本本配置。"
+        "desc_en"  "CS, APEX, R6, Overwatch. Modest rig: AOC 4K@160Hz + 5800X + 7900XTX.")
+  (dict "emoji" "🚀"
+        "title_zh" "科技八卦"
+        "title_en" "Tech gossip"
+        "desc_zh"  "盯着各家科技巨头和开源项目发新东西，看到有意思的就拿来玩。"
+        "desc_en"  "Watching the big-tech labs and OSS world ship things; whatever looks fun, I take for a spin.")
+  (dict "emoji" "🛵"
+        "title_zh" "电动出行"
+        "title_en" "Electric mobility"
+        "desc_zh"  "最近在研究各路电动滑板车和 E-bike。中年男人最后的浪漫（不）。"
+        "desc_en"  "Currently surveying every e-scooter and e-bike on the market. The last romance of midlife (kidding).")
+  (dict "emoji" "🐸"
+        "title_zh" "蛙蛙收藏家"
+        "title_en" "Frog collector"
+        "desc_zh"  "桌面 / 头像 / 网站 logo 都是青蛙。原因？没有原因，就是好看。"
+        "desc_en"  "Desktop, avatar, site logo — all frogs. Reason? None. They just look good.")
+-}}
+
+{{- $rack := slice
+  (dict "unit" "1U" "name" "Proxmox VE"  "tag" "hypervisor"     "port" ":8006"             "led" "green")
+  (dict "unit" "2U" "name" "Nginx Proxy" "tag" "reverse proxy"  "port" ":80"               "led" "green")
+  (dict "unit" "1U" "name" "Hugo Build"  "tag" "cf pages"       "port" "⚡ live"           "led" "green")
+  (dict "unit" "1U" "name" "Pagefind"    "tag" "search index"   "port" ":—"                "led" "green")
+  (dict "unit" "2U" "name" "Twikoo"      "tag" "comments"       "port" ":80"               "led" "green")
+  (dict "unit" "1U" "name" "EasyTier"    "tag" "mesh vpn"       "port" ":11010"            "led" "green")
+  (dict "unit" "2U" "name" "ZFS Pool"    "tag" "8TB · raidz1"   "port" "87% ⚠"             "led" "yellow")
+  (dict "unit" "1U" "name" "OpenWrt"     "tag" "gateway"        "port" "192.168.1.1"       "led" "green")
+-}}
+
+{{- $gear := slice
+  (dict "e" "🖥"  "label_zh" "显示器"   "label_en" "Display"  "val" "AOC 4K @ 160Hz")
+  (dict "e" "⚙️"  "label_zh" "CPU"     "label_en" "CPU"      "val" "AMD Ryzen 7 5800X")
+  (dict "e" "🎮"  "label_zh" "GPU"     "label_en" "GPU"      "val" "Radeon RX 7900 XTX")
+  (dict "e" "⌨️"  "label_zh" "键盘"    "label_en" "Keyboard" "val" "HHKB layout · Maple 红轴")
+  (dict "e" "🐧"  "label_zh" "OS"      "label_en" "OS"       "val" "Fedora · Debian · OpenWrt")
+  (dict "e" "🪟"  "label_zh" "终端"    "label_en" "Terminal" "val" "Zellij + zsh + Starship")
+  (dict "e" "✏️"  "label_zh" "编辑器"  "label_en" "Editor"   "val" "CLion · VSCode · nvim")
+  (dict "e" "🔤"  "label_zh" "字体"    "label_en" "Font"     "val" "LXGW WenKai / Fira Code")
+-}}
+
+{{- $timeline := slice
+  (dict "y" "2026" "accent" true
+        "t_zh" "悉尼大学 USYD 电子工程硕士在读，研究医疗图像分割"
+        "t_en" "Master of Engineering (Electrical) at USYD, researching medical image segmentation")
+  (dict "y" "2024" "accent" false
+        "t_zh" "毕设：基于 FPGA 的实时图像预处理系统（Sobel / Canny）"
+        "t_en" "Thesis: real-time FPGA image preprocessor (Sobel / Canny)")
+  (dict "y" "2023" "accent" false
+        "t_zh" "Hugo 博客上线，从 PaperMod 一路魔改到现在"
+        "t_en" "Hugo blog goes live; PaperMod gets endlessly hacked on")
+  (dict "y" "2021" "accent" false
+        "t_zh" "第一次拿起 CLion，开始正经写 C++"
+        "t_en" "First touch of CLion; starts writing C++ for real")
+  (dict "y" "???" "accent" false
+        "t_zh" "某天发现青蛙是地球上最美的生物，从此一发不可收拾 🐸"
+        "t_en" "One day decides frogs are the most beautiful creatures on Earth 🐸")
+-}}
+
+{{- $contacts := slice
+  (dict "e" "📧"
+        "label_zh" "电子邮件"  "label_en" "Email"
+        "val" "ramos@dtft.net"
+        "copy" "ramos@dtft.net"
+        "href" "mailto:ramos@dtft.net?subject=Hello!")
+  (dict "e" "💬"
+        "label_zh" "iMessage" "label_en" "iMessage"
+        "val" "razaxq@gmail.com"
+        "copy" "razaxq@gmail.com"
+        "href" "")
+  (dict "e" "🔑"
+        "label_zh" "GPG 公钥"  "label_en" "GPG public key"
+        "val_zh" "下载 pub.asc" "val_en" "Download pub.asc"
+        "copy" ""
+        "href" "pub.asc")
+  (dict "e" "🐙"
+        "label_zh" "GitHub"   "label_en" "GitHub"
+        "val" "@Ramos-x"
+        "copy" ""
+        "href" "https://github.com/Ramos-x")
+-}}
+
+{{- $built := slice
+  (dict "name" "Hugo"          "emoji" "🏗"  "desc_zh" "静态站生成"      "desc_en" "static site generator"  "href" "https://gohugo.io")
+  (dict "name" "PaperMod"      "emoji" "📄"  "desc_zh" "魔改主题"        "desc_en" "hacked-up theme"        "href" "https://github.com/Ramos-x/Home-PaperMod/")
+  (dict "name" "Cloudflare"    "emoji" "☁️"  "desc_zh" "托管 / 加速"     "desc_en" "hosting / CDN"          "href" "https://dash.cloudflare.com/")
+  (dict "name" "Shiki"         "emoji" "🎨"  "desc_zh" "代码高亮"        "desc_en" "code highlighter"       "href" "https://shiki.style/")
+  (dict "name" "Pagefind"      "emoji" "🔍"  "desc_zh" "静态搜索"        "desc_en" "static search"          "href" "https://pagefind.app/")
+  (dict "name" "Twikoo"        "emoji" "💬"  "desc_zh" "评论系统"        "desc_en" "comments"               "href" "https://twikoo.js.org/")
+  (dict "name" "Fancybox"      "emoji" "🖼"  "desc_zh" "图片浏览"        "desc_en" "image lightbox"         "href" "https://fancyapps.com/fancybox/")
+  (dict "name" "MathJax"       "emoji" "∑"   "desc_zh" "公式渲染"        "desc_en" "math typesetting"       "href" "https://www.mathjax.org/")
+  (dict "name" "Mermaid"       "emoji" "🔗"  "desc_zh" "关系图"          "desc_en" "diagrams"               "href" "https://mermaid.js.org/intro/")
+  (dict "name" "LXGW WenKai"   "emoji" "文"  "desc_zh" "中文字体"        "desc_en" "Chinese font"           "href" "https://github.com/lxgw/LxgwWenKai/")
+  (dict "name" "JetBrains Mono" "emoji" "M"  "desc_zh" "等宽字体"        "desc_en" "monospace font"         "href" "https://www.jetbrains.com/lp/mono/")
+  (dict "name" "APlayer"       "emoji" "🎵"  "desc_zh" "第一个前端组件"  "desc_en" "my first frontend toy"  "href" "https://aplayer.js.org/")
+-}}
+
+{{- $termLines := slice
+  (dict "type" "cmd" "text" "whoami")
+  (dict "type" "out" "text" (cond $en "ramos — electrical engineering @ USYD 🇦🇺" "ramos — 电子工程 @ USYD 🇦🇺"))
+  (dict "type" "cmd" "text" "cat ~/.config/about.toml")
+  (dict "type" "toml" "key" "name"      "value" "\"Ramos\"")
+  (dict "type" "toml" "key" "from"      "value" (cond $en "\"China → Sydney\"" "\"中国 → 悉尼\""))
+  (dict "type" "toml" "key" "field"     "value" (cond $en "\"medical image segmentation / FPGA / embedded\"" "\"医疗图像分割 / FPGA / 嵌入式\""))
+  (dict "type" "toml" "key" "currently" "value" (cond $en "\"tinkering with Proxmox, writing EasyTier scripts\"" "\"折腾 Proxmox + 写 EasyTier 脚本\""))
+  (dict "type" "toml" "key" "mood"      "value" "\"☕ + ⌨️ + 🐸\"")
+  (dict "type" "cmd" "text" (cond $en "echo \"welcome to my little corner\"" "echo \"欢迎来到我的小角落\""))
+  (dict "type" "out" "text" (cond $en "welcome to my little corner" "欢迎来到我的小角落"))
+-}}
+
+{{- /* ────── 文案 ────── */ -}}
+
+{{- $strings := dict
+  "hero_pill"      (cond $en "In Sydney · local time" "正在悉尼 · 当地时间")
+  "hero_lede"      (cond $en
+    "Electrical engineering grad student. Coding on the side, tinkering with the homelab, prodding curious hardware, and writing it all down. Hope you find something interesting here."
+    "电子工程在读，业余写写代码，折腾家里云、刷一些奇怪的设备，顺手把过程记下来。希望你能在这里找到感兴趣的内容。")
+  "now_title"      (cond $en "What I'm up to"          "最近在做什么")
+  "interests_title" (cond $en "A few things I love"    "一些喜欢的东西")
+  "rack_title"     (cond $en "Homelab rack"            "家里云机柜")
+  "rack_uptime"    (cond $en "uptime: 47 days · all green" "uptime: 47 days · all green")
+  "gear_title"     (cond $en "Setup"                   "装备清单")
+  "tl_title"       (cond $en "A short timeline"        "简单的时间线")
+  "contact_title"  (cond $en "Say hi"                  "聊点什么吧")
+  "contact_lede"   (cond $en "Reach out anytime — share what's going on with your life! 😄"
+                              "随时联系我吧，分享你的生活！😄")
+  "stack_title"    (cond $en "Built with"              "这个网站用到的")
+  "clog_title"     (cond $en "Site changelog"          "这个站点的更新日志")
+  "copy_idle"      (cond $en "click to copy"           "点击复制")
+  "copy_done"      (cond $en "✓ copied"                "✓ 已复制")
+  "copy_open"      (cond $en "↗ open"                  "↗ 打开")
+  "tag_add"        (cond $en "add"                     "新增")
+  "tag_fix"        (cond $en "fix"                     "修复")
+  "tag_opt"        (cond $en "opt"                     "优化")
+  "term_title"     "ramos@dtft:~ — zsh"
+-}}
+
+<article class="post about-modern"
+  {{- if not .Params.searchHidden }} data-pagefind-body{{- end }}>
+
+  {{- /* Pagefind metadata */ -}}
+  {{- if not .Params.searchHidden -}}
+    {{- with .Section }}<span data-pagefind-meta="section:{{ . }}" hidden></span>{{ end -}}
+  {{- end }}
+
+  {{- /* ────── Hero ────── */ -}}
+  <section class="hero-wrap">
+    <div class="hero-grid">
+      <div class="hero-row">
+        <div class="hero-text">
+          <div class="status-pill">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span>{{ index $strings "hero_pill" }} <span id="about-clock">--:--</span></span>
+          </div>
+          <h1 class="hero-title">
+            {{- if $en -}}
+              Hi, I'm <span class="hero-name">Ramos<span class="hero-name-bg" aria-hidden="true"></span></span> 👋
+            {{- else -}}
+              你好，<br>我是 <span class="hero-name">Ramos<span class="hero-name-bg" aria-hidden="true"></span></span> 👋
+            {{- end -}}
+          </h1>
+          <p class="hero-lede">{{ index $strings "hero_lede" }}</p>
+        </div>
+        <button type="button" class="frog" id="about-frog" aria-label="🐸">🐸</button>
+      </div>
+    </div>
+  </section>
+
+  {{- /* ────── Now ────── */ -}}
+  <section class="card now-card">
+    <div class="card-eyebrow">/ NOW</div>
+    <h2 class="card-title" style="font-size:26px;margin-bottom:22px;">{{ index $strings "now_title" }}</h2>
+    <div class="now-list">
+      {{- range $now }}
+      <div class="now-row">
+        <span class="now-emoji">{{ .emoji }}</span>
+        <span class="now-label">{{ index . (printf "label_%s" $L) }}</span>
+        <span class="now-value">{{ index . (printf "value_%s" $L) }}</span>
+      </div>
+      {{- end }}
+    </div>
+  </section>
+
+  {{- /* ────── Terminal + Timeline ────── */ -}}
+  <section class="grid-2 t-tl">
+    <div class="terminal" id="about-terminal">
+      <div class="term-bar">
+        <span class="term-dot" style="background:#ff5f57;"></span>
+        <span class="term-dot" style="background:#febc2e;"></span>
+        <span class="term-dot" style="background:#28c840;"></span>
+        <span style="margin-left:14px;">{{ index $strings "term_title" }}</span>
+      </div>
+      <div class="term-body" id="about-term-body" aria-live="polite"></div>
+    </div>
+
+    <div class="card timeline-card">
+      <div class="card-eyebrow">/ TIMELINE</div>
+      <h2 class="card-title" style="font-size:22px;margin-bottom:22px;">{{ index $strings "tl_title" }}</h2>
+      <div class="timeline-track">
+        {{- range $timeline }}
+        <div class="tl-item{{ if .accent }} accent{{ end }}">
+          <span class="tl-dot" aria-hidden="true"></span>
+          <div class="tl-year">{{ .y }}</div>
+          <div class="tl-text">{{ index . (printf "t_%s" $L) }}</div>
+        </div>
+        {{- end }}
+      </div>
+    </div>
+  </section>
+
+  {{- /* ────── Interests ────── */ -}}
+  <section class="section-mb-lg">
+    <div class="interests-head">
+      <div class="card-eyebrow">/ INTERESTS</div>
+      <h2>{{ index $strings "interests_title" }}</h2>
+    </div>
+    <div class="grid-3 interests-grid">
+      {{- range $interests }}
+      <div class="card interest">
+        <span class="interest-emoji">{{ .emoji }}</span>
+        <div class="interest-title">{{ index . (printf "title_%s" $L) }}</div>
+        <div class="interest-desc">{{ index . (printf "desc_%s" $L) }}</div>
+      </div>
+      {{- end }}
+    </div>
+  </section>
+
+  {{- /* ────── Rack + Gear ────── */ -}}
+  <section class="grid-2 r-g">
+    <div class="card">
+      <div class="rack-head">
+        <div>
+          <div class="card-eyebrow">/ HOMELAB</div>
+          <h2 class="card-title" style="font-size:22px;">{{ index $strings "rack_title" }}</h2>
+        </div>
+        <div class="rack-uptime">{{ index $strings "rack_uptime" }}</div>
+      </div>
+      <div class="rack">
+        {{- range $rack }}
+        <div class="rack-row">
+          <span class="rack-tag">{{ .unit }}</span>
+          <span>
+            <span class="rack-led {{ .led }}" aria-hidden="true"></span>
+            <span class="rack-name">{{ .name }}</span>
+            <span class="rack-tag muted">// {{ .tag }}</span>
+          </span>
+          <span class="rack-port">{{ .port }}</span>
+        </div>
+        {{- end }}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-eyebrow">/ SETUP</div>
+      <h2 class="card-title" style="font-size:22px;margin-bottom:14px;">{{ index $strings "gear_title" }}</h2>
+      <div>
+        {{- range $gear }}
+        <div class="gear-row">
+          <span class="gear-label">
+            <span class="gear-emoji">{{ .e }}</span>
+            <span>{{ index . (printf "label_%s" $L) }}</span>
+          </span>
+          <span class="gear-val">{{ .val }}</span>
+        </div>
+        {{- end }}
+      </div>
+    </div>
+  </section>
+
+  {{- /* ────── Contact + Built ────── */ -}}
+  <section class="grid-2">
+    <div class="card">
+      <div class="card-eyebrow">/ CONTACT</div>
+      <h2 class="card-title" style="font-size:22px;margin-bottom:6px;">{{ index $strings "contact_title" }}</h2>
+      <p style="color:var(--secondary);font-size:14px;margin:0 0 18px;">{{ index $strings "contact_lede" }}</p>
+      <div>
+        {{- range $contacts }}
+        {{- $val := "" -}}
+        {{- if (index . (printf "val_%s" $L)) -}}
+          {{- $val = index . (printf "val_%s" $L) -}}
+        {{- else -}}
+          {{- $val = .val -}}
+        {{- end -}}
+        <button type="button" class="contact-row"
+          {{- with .copy }} data-copy="{{ . }}"{{ end }}
+          {{- with .href }} data-href="{{ . }}"{{ end }}>
+          <span class="contact-icon">{{ .e }}</span>
+          <div class="contact-body">
+            <div class="contact-label">{{ index . (printf "label_%s" $L) }}</div>
+            <div class="contact-value">{{ $val }}</div>
+          </div>
+          <span class="copy-tip"
+                data-idle="{{ index $strings "copy_idle" }}"
+                data-done="{{ index $strings "copy_done" }}"
+                data-open="{{ index $strings "copy_open" }}">
+            {{- if .copy -}}{{ index $strings "copy_idle" }}{{- else if .href -}}{{ index $strings "copy_open" }}{{- end -}}
+          </span>
+        </button>
+        {{- end }}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-eyebrow">/ STACK</div>
+      <h2 class="card-title" style="font-size:22px;margin-bottom:16px;">{{ index $strings "stack_title" }}</h2>
+      <div class="stack-grid">
+        {{- range $built }}
+        <a class="stack-item" href="{{ .href }}" target="_blank" rel="noopener">
+          <span class="stack-emoji">{{ .emoji }}</span>
+          <div class="stack-body">
+            <div class="stack-name">{{ .name }}</div>
+            <div class="stack-desc">{{ index . (printf "desc_%s" $L) }}</div>
+          </div>
+        </a>
+        {{- end }}
+      </div>
+    </div>
+  </section>
+
+  {{- /* ────── Changelog ────── */ -}}
+  {{- $clog := hugo.Data.about.changelog }}
+  <section class="card">
+    <div class="clog-head">
+      <div>
+        <div class="card-eyebrow">/ CHANGELOG</div>
+        <h2 class="card-title" style="font-size:22px;">{{ index $strings "clog_title" }}</h2>
+      </div>
+      <span class="clog-count">{{ len $clog }} {{ if $en }}entries{{ else }}条{{ end }}</span>
+    </div>
+    <div class="changelog">
+      {{- range $clog }}
+      <div class="clog-item">
+        <span class="clog-date">{{ .d }}</span>
+        <span class="clog-text">
+          <span class="clog-tag {{ .tag }}">
+            {{- if eq .tag "add" }}{{ index $strings "tag_add" }}
+            {{- else if eq .tag "fix" }}{{ index $strings "tag_fix" }}
+            {{- else }}{{ index $strings "tag_opt" }}{{ end -}}
+          </span>
+          {{ index . $L }}
+        </span>
+      </div>
+      {{- end }}
+    </div>
+  </section>
+
+</article>
+
+{{- if (.Param "comments") }}
+<div data-pagefind-ignore>{{ partial "twikoo.html" . }}</div>
+{{- end }}
+
+<script id="about-term-data" type="application/json">{{ $termLines | jsonify | safeJS }}</script>
+
+<script>
+(function () {
+    var root = document.querySelector('.about-modern');
+    if (!root) return;
+
+    var reduceMotion = window.matchMedia &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    /* ── Sydney clock ── */
+    var clockEl = document.getElementById('about-clock');
+    function updateClock() {
+        if (!clockEl) return;
+        try {
+            clockEl.textContent = new Date().toLocaleTimeString('en-AU', {
+                timeZone: 'Australia/Sydney',
+                hour: '2-digit', minute: '2-digit', hour12: false
+            });
+        } catch (e) { /* noop */ }
+    }
+    updateClock();
+    setInterval(updateClock, 30000);
+
+    /* ── Frog bounce ── */
+    var frog = document.getElementById('about-frog');
+    if (frog) {
+        frog.addEventListener('click', function () {
+            if (reduceMotion) return;
+            frog.classList.add('bounce');
+            setTimeout(function () { frog.classList.remove('bounce'); }, 600);
+        });
+    }
+
+    /* ── Terminal typing animation ── */
+    var termBody = document.getElementById('about-term-body');
+    var termRoot = document.getElementById('about-terminal');
+    var termDataEl = document.getElementById('about-term-data');
+    var lines = [];
+    if (termDataEl) {
+        try { lines = JSON.parse(termDataEl.textContent || '[]'); }
+        catch (e) { lines = []; }
+    }
+
+    function tomlSpans(line, limit) {
+        var key = line.key || '';
+        var op = ' = ';
+        var val = line.value || '';
+        var keyShown = key.slice(0, Math.min(limit, key.length));
+        limit -= keyShown.length;
+        var opShown = limit > 0 ? op.slice(0, Math.min(limit, op.length)) : '';
+        limit -= opShown.length;
+        var valShown = limit > 0 ? val.slice(0, Math.min(limit, val.length)) : '';
+        var html = '';
+        if (keyShown) html += '<span class="term-key">' + escapeHtml(keyShown) + '</span>';
+        if (opShown) html += '<span class="term-op">' + escapeHtml(opShown) + '</span>';
+        if (valShown) html += '<span class="term-str">' + escapeHtml(valShown) + '</span>';
+        return html;
+    }
+    function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, function (c) {
+            return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+        });
+    }
+    function lineLen(line) {
+        if (line.type === 'toml') {
+            return (line.key || '').length + 3 + (line.value || '').length;
+        }
+        return (line.text || '').length;
+    }
+    function renderLine(line, limit, includeCursor) {
+        var inner = '';
+        if (line.type === 'cmd') {
+            inner = '<span class="term-prompt">➜</span> ' +
+                    '<span class="term-comment">~</span> ' +
+                    escapeHtml((line.text || '').slice(0, limit));
+        } else if (line.type === 'out') {
+            inner = '<span class="term-out">' +
+                    escapeHtml((line.text || '').slice(0, limit)) +
+                    '</span>';
+        } else if (line.type === 'toml') {
+            inner = tomlSpans(line, limit);
+        }
+        if (includeCursor) inner += '<span class="term-cursor"></span>';
+        return inner;
+    }
+
+    function startTerminal() {
+        if (!termBody || !lines.length) return;
+
+        if (reduceMotion) {
+            var html = '';
+            lines.forEach(function (line) {
+                html += '<div>' + renderLine(line, lineLen(line), false) + '</div>';
+            });
+            html += '<div><span class="term-prompt">➜</span> <span class="term-comment">~</span> <span class="term-cursor"></span></div>';
+            termBody.innerHTML = html;
+            return;
+        }
+
+        var step = 0, charIdx = 0;
+        var current = document.createElement('div');
+        termBody.appendChild(current);
+
+        function tick() {
+            if (step >= lines.length) {
+                var endLine = document.createElement('div');
+                endLine.innerHTML = '<span class="term-prompt">➜</span> <span class="term-comment">~</span> <span class="term-cursor"></span>';
+                termBody.appendChild(endLine);
+                return;
+            }
+            var line = lines[step];
+            var total = lineLen(line);
+            if (charIdx < total) {
+                var speed = line.type === 'cmd' ? 38 : line.type === 'toml' ? 14 : 18;
+                charIdx++;
+                current.innerHTML = renderLine(line, charIdx, true);
+                setTimeout(tick, speed);
+            } else {
+                current.innerHTML = renderLine(line, total, false);
+                step++;
+                charIdx = 0;
+                if (step < lines.length) {
+                    current = document.createElement('div');
+                    termBody.appendChild(current);
+                }
+                var pause = line.type === 'cmd' ? 280 : 120;
+                setTimeout(tick, pause);
+            }
+        }
+        tick();
+    }
+
+    if (termRoot && lines.length) {
+        if ('IntersectionObserver' in window) {
+            var termObs = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (entry.isIntersecting) {
+                        startTerminal();
+                        termObs.disconnect();
+                    }
+                });
+            }, { threshold: 0.15 });
+            termObs.observe(termRoot);
+        } else {
+            startTerminal();
+        }
+    }
+
+    /* ── Mouse-tracking gradient on interest tiles ── */
+    root.querySelectorAll('.interest').forEach(function (el) {
+        el.addEventListener('mousemove', function (e) {
+            var r = el.getBoundingClientRect();
+            el.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+            el.style.setProperty('--my', (e.clientY - r.top) + 'px');
+        });
+    });
+
+    /* ── Contact rows: copy / open ── */
+    root.querySelectorAll('.contact-row').forEach(function (row) {
+        row.addEventListener('click', function () {
+            var copy = row.dataset.copy;
+            var href = row.dataset.href;
+            var tip = row.querySelector('.copy-tip');
+
+            if (copy) {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(copy).catch(function () {});
+                }
+                if (tip) {
+                    tip.textContent = tip.dataset.done;
+                    row.classList.add('copied');
+                    setTimeout(function () {
+                        row.classList.remove('copied');
+                        tip.textContent = tip.dataset.idle;
+                    }, 1400);
+                }
+            } else if (href) {
+                if (/^https?:/.test(href)) {
+                    window.open(href, '_blank', 'noopener');
+                } else {
+                    window.location.href = href;
+                }
+            }
+        });
+    });
+})();
+</script>
+{{- end }}
