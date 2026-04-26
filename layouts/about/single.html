@@ -67,8 +67,8 @@
   (dict "unit" "1U" "name" "Pagefind"    "tag" "search index"   "port" ":—"                "led" "green")
   (dict "unit" "2U" "name" "Twikoo"      "tag" "comments"       "port" ":80"               "led" "green")
   (dict "unit" "1U" "name" "EasyTier"    "tag" "mesh vpn"       "port" ":11010"            "led" "green")
-  (dict "unit" "2U" "name" "ZFS Pool"    "tag" "8TB · raidz1"   "port" "87% ⚠"             "led" "yellow")
-  (dict "unit" "1U" "name" "OpenWrt"     "tag" "gateway"        "port" "192.168.1.1"       "led" "green")
+  (dict "unit" "2U" "name" "ZFS Pool"    "tag" "48TB · raidz1"   "port" "87% ⚠"             "led" "yellow")
+  (dict "unit" "1U" "name" "OpenWrt"     "tag" "gateway"        "port" "10.0.0.1"       "led" "green")
 -}}
 
 {{- $gear := slice
@@ -78,8 +78,8 @@
   (dict "e" "⌨️"  "label_zh" "键盘"    "label_en" "Keyboard" "val" "HHKB layout · Maple 红轴")
   (dict "e" "🐧"  "label_zh" "OS"      "label_en" "OS"       "val" "Fedora · Debian · OpenWrt")
   (dict "e" "🪟"  "label_zh" "终端"    "label_en" "Terminal" "val" "Zellij + zsh + Starship")
-  (dict "e" "✏️"  "label_zh" "编辑器"  "label_en" "Editor"   "val" "CLion · VSCode · nvim")
-  (dict "e" "🔤"  "label_zh" "字体"    "label_en" "Font"     "val" "LXGW WenKai / Fira Code")
+  (dict "e" "✏️"  "label_zh" "编辑器"  "label_en" "Editor"   "val" "JetBrain · Sublime · nvim")
+  (dict "e" "🔤"  "label_zh" "字体"    "label_en" "Font"     "val" "LXGW WenKai / Maple Mono")
 -}}
 
 {{- $timeline := slice
@@ -92,7 +92,7 @@
   (dict "y" "2023" "accent" false
         "t_zh" "Hugo 博客上线，从 PaperMod 一路魔改到现在"
         "t_en" "Hugo blog goes live; PaperMod gets endlessly hacked on")
-  (dict "y" "2021" "accent" false
+  (dict "y" "2020" "accent" false
         "t_zh" "第一次拿起 CLion，开始正经写 C++"
         "t_en" "First touch of CLion; starts writing C++ for real")
   (dict "y" "???" "accent" false
@@ -118,9 +118,9 @@
         "href" "pub.asc")
   (dict "e" "🐙"
         "label_zh" "GitHub"   "label_en" "GitHub"
-        "val" "@Ramos-x"
+        "val" "@razaxq"
         "copy" ""
-        "href" "https://github.com/Ramos-x")
+        "href" "https://github.com/razaxq")
 -}}
 
 {{- $built := slice

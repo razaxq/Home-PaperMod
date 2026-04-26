@@ -751,7 +751,7 @@ body:has(.about-modern) .main {
 
 .about-modern .clog-count {
     font-size: 11.5px;
-    color: var(--tertiary);
+    color: var(--secondary);
     font-family: var(--mono);
 }
 
