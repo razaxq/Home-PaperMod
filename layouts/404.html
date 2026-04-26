@@ -1,3 +1,239 @@
 {{- define "main" }}
-<div class="not-found">404</div>
-{{- end }}{{/* end main */ -}}
+<section class="notfound-stage">
+    <div class="notfound-inner">
+
+        <div>
+            <div class="big-404">
+                <span class="digit">4</span><span class="digit zero">0</span><span class="digit">4</span>
+            </div>
+            <div class="zero-shadow"></div>
+        </div>
+
+        <div class="lead">迷路了，这里没有这只青蛙要找的荷叶。</div>
+        <div class="lead-sub">
+            你尝试访问的是 <code id="notfound-path">/—</code> ——
+            它可能从未存在，或者已经被我重构走了。下面这只青蛙正在帮你找回主路。
+        </div>
+
+        <div class="term">
+            <div class="term-bar">
+                <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+                <span class="title">~/ramos-base — 找不到页面</span>
+            </div>
+            <div class="term-body" id="notfound-term"></div>
+        </div>
+
+        <div class="actions">
+            <a class="btn primary" href="{{ "/" | relLangURL }}">
+            <span style="font-size:16px;">←</span> 回首页
+            </a>
+            <a class="btn" href="{{ "/search/" | relLangURL }}">搜索文章</a>
+            <button class="btn" type="button" onclick="history.back()">返回上一页</button>
+        </div>
+
+        {{- $articles := first 2 (where site.RegularPages "Type" "article").ByDate.Reverse -}}
+        {{- $journals := first 2 (where site.RegularPages "Type" "journal").ByDate.Reverse -}}
+        {{- $fixed := $articles | union $journals -}}
+        {{- $allPosts := where site.RegularPages "Type" "in" (slice "article" "journal") -}}
+        {{- $pool := complement $fixed $allPosts -}}
+        {{- with $fixed }}
+        <div class="suggest-wrap">
+            <div class="suggest-label">或者，看看这些</div>
+            <div class="suggest-grid" id="notfound-suggest-grid">
+                {{- range . }}
+                {{- $cat := "" -}}
+                {{- with .Params.categories -}}{{ $cat = index . 0 }}{{- end -}}
+                {{- if not $cat -}}{{ $cat = .Section }}{{- end -}}
+                <a class="suggest-card" href="{{ .RelPermalink }}">
+                    <div class="cat">{{ $cat }}</div>
+                    <div class="ttl">{{ .Title }}</div>
+                </a>
+                {{- end }}
+            </div>
+        </div>
+        {{- $poolItems := slice -}}
+        {{- range $pool -}}
+            {{- $cat := "" -}}
+            {{- with .Params.categories -}}{{ $cat = index . 0 }}{{- end -}}
+            {{- if not $cat -}}{{ $cat = .Section }}{{- end -}}
+            {{- $poolItems = $poolItems | append (dict "href" .RelPermalink "cat" $cat "ttl" .Title) -}}
+        {{- end -}}
+        <script id="notfound-suggest-pool" type="application/json">{{ $poolItems | jsonify | safeJS }}</script>
+        {{- end }}
+
+    </div>
+</section>
+
+<script>
+    (function () {
+        var grid = document.getElementById('notfound-suggest-grid');
+        var poolEl = document.getElementById('notfound-suggest-pool');
+        if (grid && poolEl) {
+            try {
+                var pool = JSON.parse(poolEl.textContent || '[]');
+                for (var k = pool.length - 1; k > 0; k--) {
+                    var j = Math.floor(Math.random() * (k + 1));
+                    var tmp = pool[k]; pool[k] = pool[j]; pool[j] = tmp;
+                }
+                pool.slice(0, 2).forEach(function (item) {
+                    var a = document.createElement('a');
+                    a.className = 'suggest-card';
+                    a.href = item.href;
+                    var cat = document.createElement('div');
+                    cat.className = 'cat';
+                    cat.textContent = item.cat;
+                    var ttl = document.createElement('div');
+                    ttl.className = 'ttl';
+                    ttl.textContent = item.ttl;
+                    a.appendChild(cat);
+                    a.appendChild(ttl);
+                    grid.appendChild(a);
+                });
+            } catch (e) { /* noop */ }
+        }
+
+        var pathEl = document.getElementById('notfound-path');
+        if (pathEl) {
+            var fakes = [
+                // --- 你原有的路径 ---
+                '/posts/lost-frog/',
+                '/2024/05/secret-page',
+                '/admin.php',
+                '/about/me/contact',
+
+                // --- 💻 程序员与技术玩梗 ---
+                '/api/v1/make-coffee',                 // 经典的HTTP 418我是个茶壶梗
+                '/wp-admin/includes/magic.php',        // 假装有魔法脚本
+                '/hidden/passwords-do-not-read.txt',   // 钓鱼专用
+                '/.env.production.real.final.backup',  // 真实的命名灾难
+                '/usr/bin/happiness',                  // 找不到的幸福
+                '/sudo/rm/-rf/everything',             // 危险的边缘试探
+
+                // --- 🎬 流行文化与脑洞科幻 ---
+                '/matrix/red-pill',                    // 骇客帝国
+                '/hogwarts/platform-9-3-4',            // 哈利波特
+                '/area-51/alien-archives/',            // 51区外星档案
+                '/universe/answer/42',                 // 银河系漫游指南
+                '/portal/cake-is-a-lie',               // 传送门
+                '/tardis/control-room',                // 神秘博士
+
+                // --- 🤣 中文搞笑与职场吐槽 ---
+                '/老板/假发/购买记录',
+                '/涨薪/申请表/最终版-已驳回.pdf',
+                '/脱发/治疗指南/绝密档案',
+                '/bug/解决办法/其实就是重启试试',
+                '/产品经理/今天/又提了什么离谱需求',
+                '/未来的/我/穿越回来/留下的信',
+
+                // --- 🌌 迷路与存在主义 ---
+                '/where/is/my/mind',
+                '/into/the/unknown/',
+                '/void/null/undefined',
+                '/blackhole/event-horizon',
+                '/404/page-not-found/wait-this-is-it'  // 俄罗斯套娃
+            ];
+            pathEl.textContent = fakes[Math.floor(Math.random() * fakes.length)];
+        }
+
+        var term = document.getElementById('notfound-term');
+        if (!term) return;
+
+        var steps = [
+            {type: 'cmd', text: 'cd /var/www/ramos-base/this-page'},
+            {type: 'pause', delay: 380},
+            {type: 'err', text: 'sh: cd: 没有那个文件或目录'},
+            {type: 'pause', delay: 220},
+            {type: 'cmd', text: 'curl -fsSL ramos.example/404 | sh'},
+            {type: 'pause', delay: 460},
+            {type: 'log', text: '> 检查路径……失败'},
+            {type: 'log', text: '> 寻找最近文章……成功'},
+            {type: 'log', text: '> 建议: 回首页 / 搜索 / 留言'}
+        ];
+
+        var promptHTML =
+            '<span class="prompt">ramos@base</span>' +
+            '<span class="at">:</span>' +
+            '<span class="path">~</span>' +
+            '<span class="dim">$</span> ';
+
+        function colorTail(text) {
+            if (/失败$/.test(text)) {
+                return '<span class="dim">' + text.slice(0, -2) + '</span><span class="err">失败</span>';
+            }
+            if (/成功$/.test(text)) {
+                return '<span class="dim">' + text.slice(0, -2) + '</span><span class="ok">成功</span>';
+            }
+            return '<span class="dim">' + text + '</span>';
+        }
+
+        function renderLine(step, partial) {
+            if (step.type === 'cmd') {
+                return promptHTML + '<span class="cmd">' + partial + '</span>';
+            }
+            if (step.type === 'err') {
+                return '<span class="err">' + partial + '</span>';
+            }
+            return colorTail(partial);
+        }
+
+        function appendLine(step, withCursor) {
+            var div = document.createElement('div');
+            div.innerHTML = renderLine(step, step.text) + (withCursor ? '<span class="cursor"></span>' : '');
+            term.appendChild(div);
+        }
+
+        function finalCursorLine() {
+            var div = document.createElement('div');
+            div.style.marginTop = '6px';
+            div.innerHTML = promptHTML + '<span class="cursor"></span>';
+            term.appendChild(div);
+        }
+
+        var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        if (reduceMotion) {
+            steps.forEach(function (s) {
+                if (s.type !== 'pause') appendLine(s, false);
+            });
+            finalCursorLine();
+            return;
+        }
+
+        var i = 0;
+
+        function runStep() {
+            if (i >= steps.length) {
+                finalCursorLine();
+                return;
+            }
+            var step = steps[i];
+            if (step.type === 'pause') {
+                setTimeout(function () {
+                    i++;
+                    runStep();
+                }, step.delay);
+                return;
+            }
+            var line = document.createElement('div');
+            term.appendChild(line);
+            var ch = 0;
+            var speed = 24;
+            var typeId = setInterval(function () {
+                ch++;
+                var partial = step.text.slice(0, ch);
+                line.innerHTML = renderLine(step, partial) + '<span class="cursor"></span>';
+                if (ch >= step.text.length) {
+                    clearInterval(typeId);
+                    line.innerHTML = renderLine(step, step.text);
+                    setTimeout(function () {
+                        i++;
+                        runStep();
+                    }, 220);
+                }
+            }, speed);
+        }
+
+        runStep();
+    })();
+</script>
+{{- end }}

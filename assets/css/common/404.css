@@ -1,11 +1,246 @@
-.not-found {
-    position: absolute;
-    left: 0;
-    right: 0;
+/* ── 404: 迷路了 ── */
+
+.notfound-stage {
+    min-height: 100vh;
+    padding: calc(var(--header-height) + 40px) 24px 60px;
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 80%;
-    font-size: 160px;
+}
+.notfound-inner {
+    width: 100%;
+    max-width: 760px;
+}
+
+/* ── Big 404 ── */
+.big-404 {
+    font-family: var(--mono);
+    font-weight: 500;
+    font-size: clamp(120px, 22vw, 220px);
+    line-height: 1;
+    letter-spacing: -8px;
+    color: var(--primary);
+    position: relative;
+    display: inline-block;
+    user-select: none;
+}
+.big-404 .digit {
+    display: inline-block;
+    transition: transform .4s cubic-bezier(.4, 0, .2, 1);
+}
+.big-404 .zero {
+    color: var(--accent);
+    animation: notfound-hop 2.6s ease-in-out infinite;
+    transform-origin: center bottom;
+    position: relative;
+}
+.big-404 .zero::before {
+    content: '🐸';
+    position: absolute;
+    font-size: 0.42em;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -54%);
+    filter: grayscale(0);
+}
+@keyframes notfound-hop {
+    0%, 100% { transform: translateY(0) scaleY(1); }
+    40%      { transform: translateY(-22px) scaleY(1.04); }
+    55%      { transform: translateY(-22px) scaleY(1.04); }
+    85%      { transform: translateY(0) scaleY(.92); }
+}
+
+.zero-shadow {
+    width: 0.5em;
+    height: 14px;
+    background: radial-gradient(ellipse at center, rgba(0, 0, 0, .18) 0%, transparent 70%);
+    margin: -10px 0 0 calc(50% - 0.25em);
+    border-radius: 50%;
+    animation: notfound-shadow-pulse 2.6s ease-in-out infinite;
+}
+.dark .zero-shadow,
+body.dark .zero-shadow {
+    background: radial-gradient(ellipse at center, rgba(0, 0, 0, .5) 0%, transparent 70%);
+}
+@keyframes notfound-shadow-pulse {
+    0%, 100% { transform: scaleX(1); opacity: .6; }
+    45%      { transform: scaleX(.55); opacity: .25; }
+}
+
+.notfound-stage .lead {
+    margin-top: 12px;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--primary);
+    letter-spacing: -.3px;
+}
+.notfound-stage .lead-sub {
+    margin-top: 8px;
+    font-size: 15.5px;
+    color: var(--secondary);
+    max-width: 520px;
+    line-height: 1.7;
+}
+.notfound-stage .lead-sub code {
+    font-family: var(--mono);
+    font-size: .92em;
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    color: var(--accent);
+    padding: 2px 8px;
+    border-radius: 6px;
+}
+
+/* ── Terminal card ── */
+.term {
+    margin-top: 36px;
+    background: #0d1117;
+    color: #e6edf3;
+    border-radius: 14px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, .07), 0 2px 5px rgba(0, 0, 0, .04);
+    font-family: var(--mono);
+    font-size: 13.5px;
+    line-height: 1.75;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, .06);
+}
+.term-bar {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 14px;
+    background: #161b22;
+    border-bottom: 1px solid rgba(255, 255, 255, .06);
+}
+.term-bar .dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: #3a3f47;
+}
+.term-bar .dot.red    { background: #ff5f56; }
+.term-bar .dot.yellow { background: #ffbd2e; }
+.term-bar .dot.green  { background: #27c93f; }
+.term-bar .title {
+    margin-left: 10px;
+    font-size: 12px;
+    color: #8b949e;
+    letter-spacing: .3px;
+}
+.term-body { padding: 18px 22px 22px; }
+.term .prompt  { color: #67c23a; }
+.term .at      { color: #8b949e; }
+.term .path    { color: #58a6ff; }
+.term .err     { color: #ff7b72; }
+.term .ok      { color: #67c23a; }
+.term .dim     { color: #8b949e; }
+.term .cmd     { color: #e6edf3; }
+.term .cursor {
+    display: inline-block;
+    width: 8px;
+    height: 1em;
+    background: #67c23a;
+    vertical-align: -2px;
+    margin-left: 2px;
+    animation: notfound-blink 1.05s steps(2) infinite;
+}
+@keyframes notfound-blink { 50% { opacity: 0; } }
+
+/* ── Action buttons ── */
+.notfound-stage .actions {
+    margin-top: 32px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.notfound-stage .btn {
+    font-family: inherit;
+    font-size: 14.5px;
+    padding: 10px 20px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--entry);
+    color: var(--primary);
+    cursor: pointer;
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, color .18s ease, filter .18s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+}
+.notfound-stage .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .05), 0 1px 2px rgba(0, 0, 0, .03);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+.notfound-stage .btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+.notfound-stage .btn.primary:hover {
+    color: #fff;
+    filter: brightness(1.05);
+}
+
+/* ── Suggestion cards ── */
+.suggest-wrap {
+    margin-top: 38px;
+    padding-top: 28px;
+    border-top: 1px dashed var(--border);
+}
+.suggest-label {
+    font-size: 10.5px;
+    letter-spacing: 2px;
+    /*color: var(--tertiary);*/
+    text-transform: uppercase;
     font-weight: 700;
+    margin-bottom: 14px;
+}
+.suggest-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+}
+.suggest-card {
+    display: block;
+    padding: 14px 16px;
+    background: var(--entry);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    cursor: pointer;
+    transition: border-color .2s ease, transform .2s ease, box-shadow .2s ease;
+    text-decoration: none;
+    color: inherit;
+}
+.suggest-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .05), 0 1px 2px rgba(0, 0, 0, .03);
+}
+.suggest-card .cat {
+    font-size: 10.5px;
+    color: var(--accent);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+.suggest-card .ttl {
+    font-size: 14.5px;
+    color: var(--primary);
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+@media (max-width: 640px) {
+    .notfound-stage .lead { font-size: 19px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .big-404 .zero,
+    .zero-shadow,
+    .term .cursor {
+        animation: none !important;
+    }
 }
