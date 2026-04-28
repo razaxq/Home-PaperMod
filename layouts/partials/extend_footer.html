@@ -1,331 +1,329 @@
-    <script type="module">
-        // 注册 Service Worker
-        if ('serviceWorker' in navigator) {
-            // console.log('Service Worker is supported.');
-            navigator.serviceWorker.register('/service-worker.js').then(function (registration) {
-                // console.log('Service Worker registered with scope:', registration.scope);
-                // console.log(registration);
-            }).catch(function (error) {
-                // console.log('Service Worker registration failed:', error);
-            });
-        } else {
-            // console.log('Service Worker is not supported.');
-        }
-    </script>
+<script type="module">
+    // 注册 Service Worker
+    if ('serviceWorker' in navigator) {
+        // console.log('Service Worker is supported.');
+        navigator.serviceWorker.register('/service-worker.js').then(function (registration) {
+            // console.log('Service Worker registered with scope:', registration.scope);
+            // console.log(registration);
+        }).catch(function (error) {
+            // console.log('Service Worker registration failed:', error);
+        });
+    } else {
+        // console.log('Service Worker is not supported.');
+    }
+</script>
 
 
-    <script>
-        if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-            (function () {
-                // 智能内容检测器
-                function checkContentReady() {
-                    // 主内容选择器（根据实际页面结构调整）
-                    const mainContentSelector = '.list, #top, .archive-posts, .post';
-                    const target = document.querySelector(mainContentSelector);
+<script>
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        (function () {
+            // 智能内容检测器
+            function checkContentReady() {
+                // 主内容选择器（根据实际页面结构调整）
+                const mainContentSelector = '.list, #top, .archive-posts, .post';
+                const target = document.querySelector(mainContentSelector);
 
-                    if (target) {
-                        initSequentialLoader();
-                    } else {
-                        const contentObserver = new MutationObserver((mutations, observer) => {
-                            if (document.querySelector(mainContentSelector)) {
-                                initSequentialLoader();
-                                observer.disconnect();
-                            }
-                        });
-
-                        contentObserver.observe(document.documentElement, {
-                            childList: true,
-                            subtree: true
-                        });
-
-                        // 安全后备：DOMContentLoaded
-                        const backupInit = () => {
-                            contentObserver.disconnect();
-                            initSequentialLoader();
-                        };
-                        document.addEventListener('DOMContentLoaded', backupInit);
-                        setTimeout(backupInit, 3000); // 最终安全保障
-                    }
-                }
-
-                // 原始业务逻辑封装
-                function initSequentialLoader() {
-                    const createSequentialObserver = (selectors, delay) => {
-                        const elementsRegistry = [];
-
-                        /* 过滤掉无布局的节点（<script>/<noscript>/<template> 等）——
-                           它们 getBoundingClientRect().top === 0，会把排序挤到最前
-                           并消耗 70ms 延迟槽位，干扰后续可见元素（如 #tcomment）的处理时序 */
-                        const isRenderable = (el) => {
-                            const tag = el.tagName;
-                            if (tag === 'SCRIPT' || tag === 'NOSCRIPT' || tag === 'TEMPLATE' || tag === 'STYLE' || tag === 'LINK' || tag === 'META') return false;
-                            // offsetParent === null 表示 display:none 或脱流（但 position:fixed 例外），保守起见只排除明显的
-                            return true;
-                        };
-
-                        selectors.forEach(selector => {
-                            const elements = Array.from(document.querySelectorAll(selector));
-                            elements.forEach(element => {
-                                if (!isRenderable(element)) return;
-                                elementsRegistry.push({element, loaded: false, isImmediate: false});
-                            });
-                        });
-
-                        /* 首屏判定：只有不在视口里的元素才加 .pending（带 translateY(24px) 的
-                           初始状态），首屏内元素保留默认 transform: none，只淡入 ——
-                           避免刷新页面时首屏内容"从下方滑上来"给用户"页面往下走了"的错觉 */
-                        const viewportBottomInit = window.pageYOffset + window.innerHeight;
-                        elementsRegistry.forEach(item => {
-                            const elTop = item.element.getBoundingClientRect().top + window.pageYOffset;
-                            if (elTop > viewportBottomInit) {
-                                item.element.classList.add('pending');
-                            }
-                        });
-
-                        // 立即加载元素标记
-                        ['.archive-year', '.archive-year-header', '.archive-month', '.archive-month-header'].forEach(selector => {
-                            document.querySelectorAll(selector).forEach(element => {
-                                const item = elementsRegistry.find(i => i.element === element);
-                                if (item) item.isImmediate = true;
-                            });
-                        });
-
-                        // 元素排序逻辑
-                        elementsRegistry.sort((a, b) => {
-                            const aTop = a.element.getBoundingClientRect().top + window.pageYOffset;
-                            const bTop = b.element.getBoundingClientRect().top + window.pageYOffset;
-                            return aTop - bTop;
-                        });
-
-                        // 观察器核心逻辑
-                        let isAnimating = false;
-                        let lastProcessedY = -Infinity;
-                        const observer = new IntersectionObserver(entries => {
-                            if (!isAnimating && entries.some(e => e.isIntersecting && !e.target.classList.contains('loaded'))) {
-                                isAnimating = true;
-                                processVisibleElements();
-                            }
-                        }, {rootMargin: '20px 0px', threshold: [0, 0.5, 1]});
-
-                        // 处理可见元素
-                        const processVisibleElements = () => {
-                            const viewportBottom = window.pageYOffset + window.innerHeight;
-
-                            // 遍历 elementsRegistry，找到第一个未加载的可见元素
-                            const nextItem = elementsRegistry.find(item => {
-                                if (item.loaded) return false;
-                                const itemTop = item.element.getBoundingClientRect().top; // 只调用一次
-                                return (itemTop + window.pageYOffset) <= viewportBottom + 100;
-                            });
-
-                            if (!nextItem) {
-                                isAnimating = false;
-                                return;
-                            }
-
-                            nextItem.loaded = true;
-                            nextItem.element.classList.add('loaded');
-
-                            // 缓存 `top` 值，避免重复计算
-                            lastProcessedY = nextItem.element.getBoundingClientRect().top + window.pageYOffset;
-
-                            if (nextItem.isImmediate) {
-                                return processVisibleElements();
-                            }
-
-                            setTimeout(processVisibleElements, delay);
-                        };
-
-                        // 初始化观察
-                        elementsRegistry.forEach(item => observer.observe(item.element));
-
-                        // 滚动处理
-                        const scrollHandler = throttle(() => {
-                            if (!isAnimating) {
-                                const hasUnloaded = elementsRegistry.some(item =>
-                                    !item.loaded &&
-                                    (item.element.getBoundingClientRect().top + window.pageYOffset) <=
-                                    window.pageYOffset + window.innerHeight + 100
-                                );
-                                if (hasUnloaded) {
-                                    isAnimating = true;
-                                    processVisibleElements();
-                                }
-                            }
-                        }, 100);
-
-                        window.addEventListener('scroll', scrollHandler);
-                        setTimeout(() => !isAnimating && processVisibleElements(), 50);
-                    };
-
-                    // 节流函数
-                    const throttle = (fn, wait) => {
-                        let timeout;
-                        return (...args) => {
-                            if (!timeout) {
-                                timeout = setTimeout(() => {
-                                    fn(...args);
-                                    timeout = null;
-                                }, wait);
-                            }
-                        };
-                    };
-
-                    // 初始化调用
-                    createSequentialObserver([
-                        '.list > .main > *',
-                        '#top > .main > *',
-                        '.archive-year',
-                        '.archive-month',
-                        '.archive-posts > *',
-                        '.post > *'
-                    ], 70);
-                }
-
-                // SPA 切页后重新触发逐步加载（新内容默认 opacity:0，需要再跑一遍 loader 才能依次 .loaded）
-                document.addEventListener('spa:loaded', function () {
+                if (target) {
                     initSequentialLoader();
-                });
-
-                // 启动检测
-                if (performance.getEntriesByName('first-contentful-paint').length > 0) {
-                    checkContentReady();
-                } else if ('PerformanceObserver' in window) {
-                    const observer = new PerformanceObserver((entries) => {
-                        if (entries.getEntriesByName('first-contentful-paint').length > 0) {
-                            checkContentReady();
+                } else {
+                    const contentObserver = new MutationObserver((mutations, observer) => {
+                        if (document.querySelector(mainContentSelector)) {
+                            initSequentialLoader();
                             observer.disconnect();
                         }
                     });
-                    observer.observe({type: 'paint', buffered: true});
-                } else {
-                    // 降级到原逻辑（当 FCP 不可用时）
-                    if (document.readyState !== 'loading') {
-                        checkContentReady();
-                    } else {
-                        document.addEventListener('readystatechange', () =>
-                            document.readyState === 'interactive' && checkContentReady()
-                        );
-                    }
+
+                    contentObserver.observe(document.documentElement, {
+                        childList: true,
+                        subtree: true
+                    });
+
+                    // 安全后备：DOMContentLoaded
+                    const backupInit = () => {
+                        contentObserver.disconnect();
+                        initSequentialLoader();
+                    };
+                    document.addEventListener('DOMContentLoaded', backupInit);
+                    setTimeout(backupInit, 3000); // 最终安全保障
                 }
-            })();
-        }
-    </script>
+            }
 
-    <!-- 复制按钮 -->
-    <div>
-        <script type="module">
-            // 复制按钮初始化
-            // 兼容两种结构：
-            //   - 旧 Chroma：parent = .highlight > .chroma > ...，内部有两个 <code>（行号 + 内容），取 [1]
-            //   - 新 Shiki： parent = pre.shiki-pending / pre.shiki，只有一个 <code>
-            // 统一策略：取最后一个 <code> 的 innerText —— 两种结构下都是"真正的代码内容"。
-            // 注意：点击时现场读 textContent，以避开 Shiki 异步渲染把 parent 换掉的孤儿引用问题。
-            document.querySelectorAll('.copyButton').forEach(copyButton => {
-                const links = copyButton.parentElement;
-                if (!links) return;
+            // 原始业务逻辑封装
+            function initSequentialLoader() {
+                const createSequentialObserver = (selectors, delay) => {
+                    const elementsRegistry = [];
 
-                copyButton.addEventListener('click', () => {
-                    // 现场找 —— tab 切换 / Shiki 渲染后 DOM 会变
-                    const container = links.parentElement; // .codetab
-                    if (!container) return;
+                    /* 过滤掉无布局的节点（<script>/<noscript>/<template> 等）——
+                       它们 getBoundingClientRect().top === 0，会把排序挤到最前
+                       并消耗 70ms 延迟槽位，干扰后续可见元素（如 #tcomment）的处理时序 */
+                    const isRenderable = (el) => {
+                        const tag = el.tagName;
+                        if (tag === 'SCRIPT' || tag === 'NOSCRIPT' || tag === 'TEMPLATE' || tag === 'STYLE' || tag === 'LINK' || tag === 'META') return false;
+                        // offsetParent === null 表示 display:none 或脱流（但 position:fixed 例外），保守起见只排除明显的
+                        return true;
+                    };
 
-                    // 优先找当前 active 的 codetab__content（多 tab 场景）；
-                    // 没有的话就拿 .codetab 下紧跟着 .codetab__links 的 pre
-                    let codeHost = container.querySelector('.codetab__content.active') || links.nextElementSibling;
-                    if (!codeHost) return;
+                    selectors.forEach(selector => {
+                        const elements = Array.from(document.querySelectorAll(selector));
+                        elements.forEach(element => {
+                            if (!isRenderable(element)) return;
+                            elementsRegistry.push({ element, loaded: false, isImmediate: false });
+                        });
+                    });
 
-                    const codes = codeHost.querySelectorAll('code');
-                    if (codes.length === 0) return;
-                    const codeEl = codes[codes.length - 1];
-                    const code = codeEl.innerText.trim().replace(/\n{2}/g, '\n');
-
-                    if (code && navigator.clipboard) {
-                        navigator.clipboard.writeText(code);
-                    }
-                });
-            });
-
-            // ========================== codes ==========================
-            const codetabNodes = document.querySelectorAll('.codetab');
-            codetabNodes.forEach(function (elem, idx) {
-                const containerElem = elem;
-                const codetabLinks = elem.querySelectorAll('.codetab__link');
-                const codetabContents = elem.querySelectorAll('.codetab__content');
-
-                // 如果 codetabContents 为空，检查对应顺序的 codetabLinks 是否有 active 状态
-                if (codetabContents.length === 0) {
-                    codetabLinks.forEach((link) => {
-                        if (!link.classList.contains('active')) {
-                            link.classList.add('active');
+                    /* 首屏判定：只有不在视口里的元素才加 .pending（带 translateY(24px) 的
+                       初始状态），首屏内元素保留默认 transform: none，只淡入 ——
+                       避免刷新页面时首屏内容"从下方滑上来"给用户"页面往下走了"的错觉 */
+                    const viewportBottomInit = window.pageYOffset + window.innerHeight;
+                    elementsRegistry.forEach(item => {
+                        const elTop = item.element.getBoundingClientRect().top + window.pageYOffset;
+                        if (elTop > viewportBottomInit) {
+                            item.element.classList.add('pending');
                         }
                     });
-                    return;
-                }
 
-                if (!codetabLinks || codetabLinks.length === 0) {
-                    return;
-                }
+                    // 立即加载元素标记
+                    ['.archive-year', '.archive-year-header', '.archive-month', '.archive-month-header'].forEach(selector => {
+                        document.querySelectorAll(selector).forEach(element => {
+                            const item = elementsRegistry.find(i => i.element === element);
+                            if (item) item.isImmediate = true;
+                        });
+                    });
 
-                codetabLinks.forEach(function (link, index, self) {
-                    link.onclick = function (e) {
-                        // 标签页切换（复制按键不再在这里重绑 —— 初始化时的 click handler
-                        //   会在点击时现场查找 .codetab__content.active 下的 code，自动跟随当前 tab）
-                        for (let i = 0; i < self.length; ++i) {
-                            if (index === parseInt(i, 10)) {
-                                if (!self[i].classList.contains('active')) {
-                                    self[i].classList.add('active');
-                                }
-                                if (codetabContents[i]) {
-                                    codetabContents[i].classList.add('active');
-                                    codetabContents[i].style.display = 'block';
-                                }
-                            } else {
-                                self[i].classList.remove('active');
-                                if (codetabContents[i]) {
-                                    codetabContents[i].classList.remove('active');
-                                    codetabContents[i].style.display = 'none';
-                                }
+                    // 元素排序逻辑
+                    elementsRegistry.sort((a, b) => {
+                        const aTop = a.element.getBoundingClientRect().top + window.pageYOffset;
+                        const bTop = b.element.getBoundingClientRect().top + window.pageYOffset;
+                        return aTop - bTop;
+                    });
+
+                    // 观察器核心逻辑
+                    let isAnimating = false;
+                    let lastProcessedY = -Infinity;
+                    const observer = new IntersectionObserver(entries => {
+                        if (!isAnimating && entries.some(e => e.isIntersecting && !e.target.classList.contains('loaded'))) {
+                            isAnimating = true;
+                            processVisibleElements();
+                        }
+                    }, { rootMargin: '20px 0px', threshold: [0, 0.5, 1] });
+
+                    // 处理可见元素
+                    const processVisibleElements = () => {
+                        const viewportBottom = window.pageYOffset + window.innerHeight;
+
+                        // 遍历 elementsRegistry，找到第一个未加载的可见元素
+                        const nextItem = elementsRegistry.find(item => {
+                            if (item.loaded) return false;
+                            const itemTop = item.element.getBoundingClientRect().top; // 只调用一次
+                            return (itemTop + window.pageYOffset) <= viewportBottom + 100;
+                        });
+
+                        if (!nextItem) {
+                            isAnimating = false;
+                            return;
+                        }
+
+                        nextItem.loaded = true;
+                        nextItem.element.classList.add('loaded');
+
+                        // 缓存 `top` 值，避免重复计算
+                        lastProcessedY = nextItem.element.getBoundingClientRect().top + window.pageYOffset;
+
+                        if (nextItem.isImmediate) {
+                            return processVisibleElements();
+                        }
+
+                        setTimeout(processVisibleElements, delay);
+                    };
+
+                    // 初始化观察
+                    elementsRegistry.forEach(item => observer.observe(item.element));
+
+                    // 滚动处理
+                    const scrollHandler = throttle(() => {
+                        if (!isAnimating) {
+                            const hasUnloaded = elementsRegistry.some(item =>
+                                !item.loaded &&
+                                (item.element.getBoundingClientRect().top + window.pageYOffset) <=
+                                window.pageYOffset + window.innerHeight + 100
+                            );
+                            if (hasUnloaded) {
+                                isAnimating = true;
+                                processVisibleElements();
+                            }
+                        }
+                    }, 100);
+
+                    window.addEventListener('scroll', scrollHandler);
+                    setTimeout(() => !isAnimating && processVisibleElements(), 50);
+                };
+
+                // 节流函数
+                const throttle = (fn, wait) => {
+                    let timeout;
+                    return (...args) => {
+                        if (!timeout) {
+                            timeout = setTimeout(() => {
+                                fn(...args);
+                                timeout = null;
+                            }, wait);
+                        }
+                    };
+                };
+
+                // 初始化调用
+                createSequentialObserver([
+                    '.list > .main > *',
+                    '#top > .main > *',
+                    '.archive-year',
+                    '.archive-month',
+                    '.archive-posts > *',
+                    '.post > *'
+                ], 70);
+            }
+
+            // SPA 切页后重新触发逐步加载（新内容默认 opacity:0，需要再跑一遍 loader 才能依次 .loaded）
+            document.addEventListener('spa:loaded', function () {
+                initSequentialLoader();
+            });
+
+            // 启动检测
+            if (performance.getEntriesByName('first-contentful-paint').length > 0) {
+                checkContentReady();
+            } else if ('PerformanceObserver' in window) {
+                const observer = new PerformanceObserver((entries) => {
+                    if (entries.getEntriesByName('first-contentful-paint').length > 0) {
+                        checkContentReady();
+                        observer.disconnect();
+                    }
+                });
+                observer.observe({ type: 'paint', buffered: true });
+            } else {
+                // 降级到原逻辑（当 FCP 不可用时）
+                if (document.readyState !== 'loading') {
+                    checkContentReady();
+                } else {
+                    document.addEventListener('readystatechange', () =>
+                        document.readyState === 'interactive' && checkContentReady()
+                    );
+                }
+            }
+        })();
+    }
+</script>
+
+<!-- 复制按钮 -->
+<div>
+    <script type="module">
+        // 复制按钮初始化
+        // 兼容两种结构：
+        //   - 旧 Chroma：parent = .highlight > .chroma > ...，内部有两个 <code>（行号 + 内容），取 [1]
+        //   - 新 Shiki： parent = pre.shiki-pending / pre.shiki，只有一个 <code>
+        // 统一策略：取最后一个 <code> 的 innerText —— 两种结构下都是"真正的代码内容"。
+        // 注意：点击时现场读 textContent，以避开 Shiki 异步渲染把 parent 换掉的孤儿引用问题。
+        document.querySelectorAll('.copyButton').forEach(copyButton => {
+            const links = copyButton.parentElement;
+            if (!links) return;
+
+            copyButton.addEventListener('click', () => {
+                // 现场找 —— tab 切换 / Shiki 渲染后 DOM 会变
+                const container = links.parentElement; // .codetab
+                if (!container) return;
+
+                // 优先找当前 active 的 codetab__content（多 tab 场景）；
+                // 没有的话就拿 .codetab 下紧跟着 .codetab__links 的 pre
+                let codeHost = container.querySelector('.codetab__content.active') || links.nextElementSibling;
+                if (!codeHost) return;
+
+                const codes = codeHost.querySelectorAll('code');
+                if (codes.length === 0) return;
+                const codeEl = codes[codes.length - 1];
+                const code = codeEl.innerText.trim().replace(/\n{2}/g, '\n');
+
+                if (code && navigator.clipboard) {
+                    navigator.clipboard.writeText(code);
+                }
+            });
+        });
+
+        // ========================== codes ==========================
+        const codetabNodes = document.querySelectorAll('.codetab');
+        codetabNodes.forEach(function (elem, idx) {
+            const containerElem = elem;
+            const codetabLinks = elem.querySelectorAll('.codetab__link');
+            const codetabContents = elem.querySelectorAll('.codetab__content');
+
+            // 如果 codetabContents 为空，检查对应顺序的 codetabLinks 是否有 active 状态
+            if (codetabContents.length === 0) {
+                codetabLinks.forEach((link) => {
+                    if (!link.classList.contains('active')) {
+                        link.classList.add('active');
+                    }
+                });
+                return;
+            }
+
+            if (!codetabLinks || codetabLinks.length === 0) {
+                return;
+            }
+
+            codetabLinks.forEach(function (link, index, self) {
+                link.onclick = function (e) {
+                    // 标签页切换（复制按键不再在这里重绑 —— 初始化时的 click handler
+                    //   会在点击时现场查找 .codetab__content.active 下的 code，自动跟随当前 tab）
+                    for (let i = 0; i < self.length; ++i) {
+                        if (index === parseInt(i, 10)) {
+                            if (!self[i].classList.contains('active')) {
+                                self[i].classList.add('active');
+                            }
+                            if (codetabContents[i]) {
+                                codetabContents[i].classList.add('active');
+                                codetabContents[i].style.display = 'block';
+                            }
+                        } else {
+                            self[i].classList.remove('active');
+                            if (codetabContents[i]) {
+                                codetabContents[i].classList.remove('active');
+                                codetabContents[i].style.display = 'none';
                             }
                         }
                     }
-                });
+                }
             });
-        </script>
-    </div>
+        });
+    </script>
+</div>
 
-    <!-- 图片点击放大 Fancybox -->
-    <div>
-        <!-- 使用CDN的CSS -->
-        <link
-            href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css"
-            rel="stylesheet"
-        />
-        <script type="module">
-            import {Fancybox} from 'https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.esm.js';
+<!-- 图片点击放大 Fancybox -->
+<link href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox/fancybox.css" rel="stylesheet" />
 
-        // 确保在页面加载完成后初始化
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initFancybox);
-        } else {
-            initFancybox();
-        }
+<div>
+    <script type="module">
+        // 1. 加上版本号锁定依赖
+        import { Fancybox } from 'https://cdn.jsdelivr.net/npm/@fancyapps/ui/+esm';
 
-        function initFancybox() {
-            Fancybox.bind("[data-fancybox]", {
-                // 关闭 Hash 插件：否则打开/关闭 lightbox 会 push/pop history，触发 SPA popstate 重新加载
-                Hash: false,
-                Carousel: {
-                    transition: "slide",
+        // 2. 移除多余的 DOMContentLoaded 监听，直接初始化
+        Fancybox.bind("[data-fancybox]", {
+            // 关闭 Hash 插件：防止触发 SPA popstate 重新加载页面
+            Hash: false,
+            zoomEffect: false,
+            Carousel: {
+                transition: "slide",
+                // groupAll: true,                // 将所有带有 data-fancybox 属性的图片强制归为一个图集
+                // groupAttr: "image",
+                // wheel: "zoom",
+                Thumbs: {
+                    type: "modern", // "modern" | "classic" | "scrollable"
                 },
-                groupAll: true,
-                groupAttr: "data",
-                contentClick: "zoomToFit",
-                contentDblClick: false,
-                wheel: "zoom",
-                Images: {
-                    initialSize: "fit",
-                    protected: true,
+                Zoomable: {
+                    Panzoom: {
+                        protected: true,
+                        maxScale: "cover",
+                        panMode: "mousemove",
+                        mouseMoveFactor: 1.1,
+                        clickAction: "iterateZoom",
+                        maxScale: 2,
+                    },
                 },
                 Toolbar: {
                     display: {
@@ -334,18 +332,21 @@
                         right: ["download", "close"],
                     },
                 },
-            });
-        }
+            },
+            mainStyle: {
+                "--f-toolbar-gap": "8px",
+                "--f-button-border-radius": "50%",
+                "--f-thumb-opacity": "0.5",
+                "--f-thumb-hover-opacity": "1",
+                "--f-thumb-selected-opacity": "1",
+                "--f-button-bg": "transparent",
+                "--f-arrow-bg": "transparent",
+                "--fancybox-backdrop-bg": "black",
+                
+            },
+        });
     </script>
 </div>
-
-
-
-
-
-
-
-
 
 
 
@@ -355,350 +356,352 @@
      重新执行新页面的 <script> → pushState → 平滑过渡
      ════════════════════════════════════════════════════════ -->
 <script>
-(function () {
-    'use strict';
+    (function () {
+        'use strict';
 
-    var REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    var FADE_MS = REDUCED ? 0 : 180;
+        var REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var FADE_MS = REDUCED ? 0 : 180;
 
-    /* progress-bar 移到 body */
-    var pb = document.getElementById('progress-bar');
-    if (pb && pb.parentNode !== document.body) document.body.appendChild(pb);
+        /* progress-bar 移到 body */
+        var pb = document.getElementById('progress-bar');
+        if (pb && pb.parentNode !== document.body) document.body.appendChild(pb);
 
-    /* ════════════════════════════════════════════════════════
-       核心 A. 逐页执行的初始化器 —— 每次内容替换后都要重跑
-       ════════════════════════════════════════════════════════ */
-    function initPage() {
-        initHeaderHide();
-        initProgressBar();
-        initTOC();
-        initBackTop();
+        /* ════════════════════════════════════════════════════════
+           核心 A. 逐页执行的初始化器 —— 每次内容替换后都要重跑
+           ════════════════════════════════════════════════════════ */
+        function initPage() {
+            initHeaderHide();
+            initProgressBar();
+            initTOC();
+            initBackTop();
 
-        /* Fancybox 重绑 */
-        if (window.Fancybox && typeof window.Fancybox.bind === 'function') {
-            try { window.Fancybox.unbind('[data-fancybox]'); } catch (e) {}
-            try { window.Fancybox.bind('[data-fancybox]'); } catch (e) {}
+            /* Fancybox 重绑 */
+            if (window.Fancybox && typeof window.Fancybox.bind === 'function') {
+                try { window.Fancybox.unbind('[data-fancybox]'); } catch (e) { }
+                try { window.Fancybox.bind('[data-fancybox]'); } catch (e) { }
+            }
+
+            /* Twikoo / 评论 —— 按需再加 */
         }
 
-        /* Twikoo / 评论 —— 按需再加 */
-    }
-
-    /* ── Header 滚动隐藏 ── */
-    var _headerState = null;
-    function initHeaderHide() {
-        var header = document.querySelector('.header');
-        if (!header) return;
-        if (_headerState) window.removeEventListener('scroll', _headerState.handler);
-        var lastY = window.scrollY || 0, tick = false;
-        function upd() {
-            var y = window.scrollY, d = y - lastY;
-            if (y < 80) header.classList.remove('scroll-hidden');
-            else if (d > 2) header.classList.add('scroll-hidden');
-            else if (d < -2) header.classList.remove('scroll-hidden');
-            lastY = y; tick = false;
+        /* ── Header 滚动隐藏 ── */
+        var _headerState = null;
+        function initHeaderHide() {
+            var header = document.querySelector('.header');
+            if (!header) return;
+            if (_headerState) window.removeEventListener('scroll', _headerState.handler);
+            var lastY = window.scrollY || 0, tick = false;
+            function upd() {
+                var y = window.scrollY, d = y - lastY;
+                if (y < 80) header.classList.remove('scroll-hidden');
+                else if (d > 2) header.classList.add('scroll-hidden');
+                else if (d < -2) header.classList.remove('scroll-hidden');
+                lastY = y; tick = false;
+            }
+            var handler = function () {
+                if (!tick) { requestAnimationFrame(upd); tick = true; }
+            };
+            window.addEventListener('scroll', handler, { passive: true });
+            _headerState = { handler: handler };
         }
-        var handler = function () {
-            if (!tick) { requestAnimationFrame(upd); tick = true; }
-        };
-        window.addEventListener('scroll', handler, { passive: true });
-        _headerState = { handler: handler };
-    }
 
-    /* ── 进度条 ── */
-    var _pbState = null;
-    function initProgressBar() {
-        if (!pb) return;
-        if (_pbState) window.removeEventListener('scroll', _pbState.handler);
-        var tick = false;
-        function upd() {
-            var total = document.documentElement.scrollHeight - window.innerHeight;
-            pb.style.width = (total > 0 ? Math.min(100, Math.max(0, window.scrollY / total * 100)) : 0) + '%';
-            tick = false;
+        /* ── 进度条 ── */
+        var _pbState = null;
+        function initProgressBar() {
+            if (!pb) return;
+            if (_pbState) window.removeEventListener('scroll', _pbState.handler);
+            var tick = false;
+            function upd() {
+                var total = document.documentElement.scrollHeight - window.innerHeight;
+                pb.style.width = (total > 0 ? Math.min(100, Math.max(0, window.scrollY / total * 100)) : 0) + '%';
+                tick = false;
+            }
+            var handler = function () {
+                if (!tick) { requestAnimationFrame(upd); tick = true; }
+            };
+            window.addEventListener('scroll', handler, { passive: true });
+            _pbState = { handler: handler };
+            upd();
         }
-        var handler = function () {
-            if (!tick) { requestAnimationFrame(upd); tick = true; }
-        };
-        window.addEventListener('scroll', handler, { passive: true });
-        _pbState = { handler: handler };
-        upd();
-    }
 
-    /* ── TOC 高亮 ── */
-    var _tocState = null;
-    function initTOC() {
-        if (_tocState) window.removeEventListener('scroll', _tocState.handler);
-        var tocLinks = document.querySelectorAll('.toc .inner a');
-        if (!tocLinks.length) { _tocState = null; return; }
-        var hm = [];
-        tocLinks.forEach(function (a) {
-            var h = a.getAttribute('href') || '', i = h.indexOf('#');
-            var id = i >= 0 ? decodeURIComponent(h.slice(i + 1)) : '';
-            var el = id && document.getElementById(id);
-            if (el) hm.push({ el: el, a: a });
-        });
-        if (!hm.length) return;
-        var cur = null;
-        var hh = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--header-height')) || 60;
-        var TH = hh + 24, tick = false;
-        function upd() {
-            var act = null;
-            for (var i = 0; i < hm.length; i++) {
-                if (hm[i].el.getBoundingClientRect().top <= TH) act = hm[i];
-            }
-            if (!act) act = hm[0];
-            if (act !== cur) {
-                cur = act;
-                tocLinks.forEach(function (a) { a.classList.remove('active'); });
-                act.a.classList.add('active');
-            }
-            tick = false;
-        }
-        var handler = function () {
-            if (!tick) { requestAnimationFrame(upd); tick = true; }
-        };
-        window.addEventListener('scroll', handler, { passive: true });
-        _tocState = { handler: handler };
-        upd();
-    }
-
-    /* ── Back-top ── */
-    var _btState = null;
-    function initBackTop() {
-        var topLink = document.querySelector('.top-link');
-        if (!topLink) return;
-        if (_btState) window.removeEventListener('scroll', _btState.handler);
-        var tick = false;
-        function upd() {
-            if (window.scrollY > 400) topLink.classList.add('show');
-            else topLink.classList.remove('show');
-            tick = false;
-        }
-        var handler = function () {
-            if (!tick) { requestAnimationFrame(upd); tick = true; }
-        };
-        window.addEventListener('scroll', handler, { passive: true });
-        _btState = { handler: handler };
-        upd();
-    }
-
-    /* ════════════════════════════════════════════════════════
-       核心 B. SPA 路由
-       ════════════════════════════════════════════════════════ */
-    var host = location.host;
-    /* 候选选择器，按顺序尝试；适配不同主题模板 */
-    var MAIN_SELECTORS = ['main .main', 'main', '.main', '#main', '[role="main"]'];
-    function getMain(root) {
-        root = root || document;
-        for (var i = 0; i < MAIN_SELECTORS.length; i++) {
-            var el = root.querySelector(MAIN_SELECTORS[i]);
-            if (el) return el;
-        }
-        return null;
-    }
-    var cache = new Map();
-    var isNavigating = false;
-    var lastPath = location.pathname;
-
-    function isInternal(a) {
-        if (!a || !a.href) return false;
-        if (a.hasAttribute('data-fancybox')) return false;
-        if (a.closest && a.closest('[data-fancybox],.fancybox__container,.fancybox__slide')) return false;
-        if (/\.(jpe?g|png|gif|webp|avif|svg|bmp|mp4|pdf|zip)(\?.*)?$/i.test(a.href)) return false;
-        try {
-            var u = new URL(a.href);
-            if (u.host !== host) return false;
-            if (a.target === '_blank' || a.hasAttribute('download')) return false;
-            return true;
-        } catch (e) { return false; }
-    }
-
-    /* 解析 HTML 字符串为 document */
-    function parseHTML(str) {
-        var doc = document.implementation.createHTMLDocument('');
-        doc.documentElement.innerHTML = str;
-        return doc;
-    }
-
-    /* 同步 header #menu 的 active 高亮（SPA 只换 main，不换 header，所以要手动更新） */
-    function syncMenuActive(newDoc) {
-        var newMenu = newDoc.querySelector('#menu');
-        var curMenu = document.querySelector('#menu');
-        if (!newMenu || !curMenu) return;
-        var activeHrefs = Object.create(null);
-        newMenu.querySelectorAll('a').forEach(function (a) {
-            var span = a.querySelector('span');
-            if (span && span.classList.contains('active')) {
-                activeHrefs[a.getAttribute('href')] = true;
-            }
-        });
-        curMenu.querySelectorAll('a').forEach(function (a) {
-            var span = a.querySelector('span');
-            if (!span) return;
-            if (activeHrefs[a.getAttribute('href')]) {
-                span.classList.add('active');
-            } else {
-                span.classList.remove('active');
-            }
-        });
-    }
-
-    /* 已执行过的外链 script URL 集合 —— 用来给 executeScripts 做幂等保证。
-       旧实现用 `document.querySelector('script[src=..]')` 判断"是否已加载"，
-       但 SPA 在调用 executeScripts 之前刚做了 `oldMain.innerHTML = newMain.innerHTML`，
-       innerHTML 注入的 <script> 只是死节点（不会执行）却能被 querySelector 查到，
-       导致首次从无 MathJax 页 → 有 MathJax 页时，主脚本被误判为"已加载"而跳过。
-       这里改用 Set，种子是初始页面已存在的 [src] 脚本，之后每次真正 appendChild 时
-       把 src 记入 Set，就不会再被当成"已加载的死节点"。 */
-    var executedScriptSrcs = new Set();
-    document.querySelectorAll('script[src]').forEach(function (s) {
-        if (s.src) executedScriptSrcs.add(s.src);
-    });
-
-    /* 重新执行指定容器内所有 <script>（innerHTML 注入的 script 不会自动执行） */
-    function executeScripts(container) {
-        var scripts = container.querySelectorAll('script');
-        scripts.forEach(function (oldScript) {
-            var newScript = document.createElement('script');
-            /* 复制属性 */
-            for (var i = 0; i < oldScript.attributes.length; i++) {
-                var attr = oldScript.attributes[i];
-                newScript.setAttribute(attr.name, attr.value);
-            }
-            if (oldScript.src) {
-                /* 外链 script：只在真正未执行过时才追加（区别于"只是节点在 DOM 里"） */
-                if (!executedScriptSrcs.has(oldScript.src)) {
-                    executedScriptSrcs.add(oldScript.src);
-                    document.head.appendChild(newScript);
-                }
-            } else {
-                newScript.textContent = oldScript.textContent;
-                oldScript.parentNode.replaceChild(newScript, oldScript);
-            }
-        });
-    }
-
-    /* fetch + swap */
-    function navigate(href, push) {
-        if (isNavigating) return;
-        isNavigating = true;
-
-        var oldMain = getMain(document);
-        if (!oldMain) { window.location.href = href; return; }
-
-        /* 淡出 */
-        oldMain.style.transition = 'opacity ' + FADE_MS + 'ms ease, transform ' + FADE_MS + 'ms ease';
-        oldMain.style.opacity = '0';
-        oldMain.style.transform = 'translateY(-8px)';
-        oldMain.style.pointerEvents = 'none';
-
-        var fetchP = cache.has(href)
-            ? Promise.resolve(cache.get(href))
-            : fetch(href, { credentials: 'same-origin' }).then(function (r) { return r.text(); });
-
-        var fadeP = new Promise(function (res) { setTimeout(res, FADE_MS); });
-
-        Promise.all([fetchP, fadeP]).then(function (arr) {
-            var html = arr[0];
-            cache.set(href, html);
-
-            var doc = parseHTML(html);
-            var newMain = getMain(doc);
-            var newTitle = doc.querySelector('title');
-
-            if (!newMain) {
-                console.warn('[SPA] new page has no .main, fallback to hard nav');
-                window.location.href = href;
-                return;
-            }
-
-            /* 替换 main 的 innerHTML 而不是整个节点，保留父节点引用 */
-            oldMain.innerHTML = newMain.innerHTML;
-            /* 同步 class（可能有 post / list 等类） */
-            oldMain.className = newMain.className;
-
-            var mainAfter = oldMain;
-
-            /* 替换 title */
-            if (newTitle) document.title = newTitle.textContent;
-
-            /* 同步 header #menu 的 active 高亮 */
-            syncMenuActive(doc);
-
-            /* 重新执行新 main 内的 script */
-            executeScripts(mainAfter);
-
-            /* pushState */
-            if (push) history.pushState({ href: href }, '', href);
-            var hrefURL = new URL(href, location.href);
-            lastPath = hrefURL.pathname;
-
-            /* 清除淡出时留下的 inline 样式（要先于 scrollIntoView —— 否则 transform 会让
-               getBoundingClientRect 读到偏移 8px 的位置，滚完再清 transform 会出现小抖动）：
-               - opacity/transform 让 main 立即回到可见位置（子元素由 CSS 默认 opacity:0 隐藏，稍后由 sequential loader 逐个 .loaded）
-               - pointer-events 必须清掉，否则 main 内部的所有链接都会被穿透到 body，变成点不开 */
-            mainAfter.style.transition = 'none';
-            mainAfter.style.opacity = '';
-            mainAfter.style.transform = '';
-            mainAfter.style.pointerEvents = '';
-            requestAnimationFrame(function () {
-                mainAfter.style.transition = '';
+        /* ── TOC 高亮 ── */
+        var _tocState = null;
+        function initTOC() {
+            if (_tocState) window.removeEventListener('scroll', _tocState.handler);
+            var tocLinks = document.querySelectorAll('.toc .inner a');
+            if (!tocLinks.length) { _tocState = null; return; }
+            var hm = [];
+            tocLinks.forEach(function (a) {
+                var h = a.getAttribute('href') || '', i = h.indexOf('#');
+                var id = i >= 0 ? decodeURIComponent(h.slice(i + 1)) : '';
+                var el = id && document.getElementById(id);
+                if (el) hm.push({ el: el, a: a });
             });
-
-            /* 滚动：若 href 带 #hash 且新页面里能找到对应元素，滚到它；否则回顶 */
-            var scrolled = false;
-            if (hrefURL.hash) {
-                var tid;
-                try { tid = decodeURIComponent(hrefURL.hash.slice(1)); }
-                catch (_) { tid = hrefURL.hash.slice(1); }  /* 畸形编码就直接用原文 */
-                var target = tid ? document.getElementById(tid) : null;
-                if (!target) {
-                    try { target = document.querySelector(hrefURL.hash); } catch (_) { /* 非法选择器就算了 */ }
+            if (!hm.length) return;
+            var cur = null;
+            var hh = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--header-height')) || 60;
+            var TH = hh + 24, tick = false;
+            function upd() {
+                var act = null;
+                for (var i = 0; i < hm.length; i++) {
+                    if (hm[i].el.getBoundingClientRect().top <= TH) act = hm[i];
                 }
-                if (target) {
-                    target.scrollIntoView({ block: 'start' });
-                    scrolled = true;
+                if (!act) act = hm[0];
+                if (act !== cur) {
+                    cur = act;
+                    tocLinks.forEach(function (a) { a.classList.remove('active'); });
+                    act.a.classList.add('active');
                 }
+                tick = false;
             }
-            if (!scrolled) window.scrollTo(0, 0);
+            var handler = function () {
+                if (!tick) { requestAnimationFrame(upd); tick = true; }
+            };
+            window.addEventListener('scroll', handler, { passive: true });
+            _tocState = { handler: handler };
+            upd();
+        }
 
-            /* 重新初始化 header / progress / TOC / back-top */
-            initPage();
+        /* ── Back-top ── */
+        var _btState = null;
+        function initBackTop() {
+            var topLink = document.querySelector('.top-link');
+            if (!topLink) return;
+            if (_btState) window.removeEventListener('scroll', _btState.handler);
+            var tick = false;
+            function upd() {
+                if (window.scrollY > 400) topLink.classList.add('show');
+                else topLink.classList.remove('show');
+                tick = false;
+            }
+            var handler = function () {
+                if (!tick) { requestAnimationFrame(upd); tick = true; }
+            };
+            window.addEventListener('scroll', handler, { passive: true });
+            _btState = { handler: handler };
+            upd();
+        }
 
-            /* 触发 spa:loaded：sequential loader 会监听并逐个给子元素加 .loaded，复现原始入场动画 */
-            document.dispatchEvent(new CustomEvent('spa:loaded', { detail: { href: href } }));
+        /* ════════════════════════════════════════════════════════
+           核心 B. SPA 路由
+           ════════════════════════════════════════════════════════ */
+        var host = location.host;
+        /* 候选选择器，按顺序尝试；适配不同主题模板 */
+        var MAIN_SELECTORS = ['main .main', 'main', '.main', '#main', '[role="main"]'];
+        function getMain(root) {
+            root = root || document;
+            for (var i = 0; i < MAIN_SELECTORS.length; i++) {
+                var el = root.querySelector(MAIN_SELECTORS[i]);
+                if (el) return el;
+            }
+            return null;
+        }
+        var cache = new Map();
+        var isNavigating = false;
+        var lastPath = location.pathname;
 
-            isNavigating = false;
-        }).catch(function () {
-            /* 失败兜底：直接硬跳 */
-            window.location.href = href;
+        function isInternal(a) {
+            if (!a || !a.href) return false;
+            if (a.hasAttribute('data-fancybox')) return false;
+            if (a.closest && a.closest('[data-fancybox],.fancybox__container,.fancybox__slide')) return false;
+            if (/\.(jpe?g|png|gif|webp|avif|svg|bmp|mp4|pdf|zip)(\?.*)?$/i.test(a.href)) return false;
+            try {
+                var u = new URL(a.href);
+                if (u.host !== host) return false;
+                if (a.target === '_blank' || a.hasAttribute('download')) return false;
+                return true;
+            } catch (e) { return false; }
+        }
+
+        /* 解析 HTML 字符串为 document */
+        function parseHTML(str) {
+            var doc = document.implementation.createHTMLDocument('');
+            doc.documentElement.innerHTML = str;
+            return doc;
+        }
+
+        /* 同步 header #menu 的 active 高亮（SPA 只换 main，不换 header，所以要手动更新） */
+        function syncMenuActive(newDoc) {
+            var newMenu = newDoc.querySelector('#menu');
+            var curMenu = document.querySelector('#menu');
+            if (!newMenu || !curMenu) return;
+            var activeHrefs = Object.create(null);
+            newMenu.querySelectorAll('a').forEach(function (a) {
+                var span = a.querySelector('span');
+                if (span && span.classList.contains('active')) {
+                    activeHrefs[a.getAttribute('href')] = true;
+                }
+            });
+            curMenu.querySelectorAll('a').forEach(function (a) {
+                var span = a.querySelector('span');
+                if (!span) return;
+                if (activeHrefs[a.getAttribute('href')]) {
+                    span.classList.add('active');
+                } else {
+                    span.classList.remove('active');
+                }
+            });
+        }
+
+        /* 已执行过的外链 script URL 集合 —— 用来给 executeScripts 做幂等保证。
+           旧实现用 `document.querySelector('script[src=..]')` 判断"是否已加载"，
+           但 SPA 在调用 executeScripts 之前刚做了 `oldMain.innerHTML = newMain.innerHTML`，
+           innerHTML 注入的 <script> 只是死节点（不会执行）却能被 querySelector 查到，
+           导致首次从无 MathJax 页 → 有 MathJax 页时，主脚本被误判为"已加载"而跳过。
+           这里改用 Set，种子是初始页面已存在的 [src] 脚本，之后每次真正 appendChild 时
+           把 src 记入 Set，就不会再被当成"已加载的死节点"。 */
+        var executedScriptSrcs = new Set();
+        document.querySelectorAll('script[src]').forEach(function (s) {
+            if (s.src) executedScriptSrcs.add(s.src);
         });
-    }
 
-    /* 拦截点击 */
-    document.addEventListener('click', function (e) {
-        if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-        var a = e.target.closest && e.target.closest('a');
-        if (!isInternal(a)) return;
+        /* 重新执行指定容器内所有 <script>（innerHTML 注入的 script 不会自动执行） */
+        function executeScripts(container) {
+            var scripts = container.querySelectorAll('script');
+            scripts.forEach(function (oldScript) {
+                var newScript = document.createElement('script');
+                /* 复制属性 */
+                for (var i = 0; i < oldScript.attributes.length; i++) {
+                    var attr = oldScript.attributes[i];
+                    newScript.setAttribute(attr.name, attr.value);
+                }
+                if (oldScript.src) {
+                    /* 外链 script：只在真正未执行过时才追加（区别于"只是节点在 DOM 里"） */
+                    if (!executedScriptSrcs.has(oldScript.src)) {
+                        executedScriptSrcs.add(oldScript.src);
+                        document.head.appendChild(newScript);
+                    }
+                } else {
+                    newScript.textContent = oldScript.textContent;
+                    oldScript.parentNode.replaceChild(newScript, oldScript);
+                }
+            });
+        }
 
-        var u = new URL(a.href);
-        /* 同路径锚点 → 不拦截（让浏览器跳锚） */
-        if (u.pathname === location.pathname && u.hash) return;
+        /* fetch + swap */
+        function navigate(href, push) {
+            if (isNavigating) return;
+            isNavigating = true;
 
-        e.preventDefault();
-        navigate(a.href, true);
-    }, true);
+            var oldMain = getMain(document);
+            if (!oldMain) { window.location.href = href; return; }
 
-    /* 浏览器前进/后退：仅在 pathname 真的变化时才走 SPA，
-       否则只是 hash 变动（如 Fancybox 关闭、锚点跳转）会误触发重新加载 */
-    window.addEventListener('popstate', function () {
-        if (location.pathname === lastPath) return;
-        lastPath = location.pathname;
-        navigate(location.href, false);
-    });
+            /* 淡出 */
+            oldMain.style.transition = 'opacity ' + FADE_MS + 'ms ease, transform ' + FADE_MS + 'ms ease';
+            oldMain.style.opacity = '0';
+            oldMain.style.transform = 'translateY(-8px)';
+            oldMain.style.pointerEvents = 'none';
 
-    /* 首屏初始化 */
-    initPage();
-})();
+            var fetchP = cache.has(href)
+                ? Promise.resolve(cache.get(href))
+                : fetch(href, { credentials: 'same-origin' }).then(function (r) { return r.text(); });
+
+            var fadeP = new Promise(function (res) { setTimeout(res, FADE_MS); });
+
+            Promise.all([fetchP, fadeP]).then(function (arr) {
+                var html = arr[0];
+                cache.set(href, html);
+
+                var doc = parseHTML(html);
+                var newMain = getMain(doc);
+                var newTitle = doc.querySelector('title');
+
+                if (!newMain) {
+                    console.warn('[SPA] new page has no .main, fallback to hard nav');
+                    window.location.href = href;
+                    return;
+                }
+
+                /* 替换 main 的 innerHTML 而不是整个节点，保留父节点引用 */
+                oldMain.innerHTML = newMain.innerHTML;
+                /* 同步 class（可能有 post / list 等类） */
+                oldMain.className = newMain.className;
+
+                var mainAfter = oldMain;
+
+                /* 替换 title */
+                if (newTitle) document.title = newTitle.textContent;
+
+                /* 同步 header #menu 的 active 高亮 */
+                syncMenuActive(doc);
+
+                /* 重新执行新 main 内的 script */
+                executeScripts(mainAfter);
+
+                /* pushState */
+                if (push) history.pushState({ href: href }, '', href);
+                var hrefURL = new URL(href, location.href);
+                lastPath = hrefURL.pathname;
+
+                /* 清除淡出时留下的 inline 样式（要先于 scrollIntoView —— 否则 transform 会让
+                   getBoundingClientRect 读到偏移 8px 的位置，滚完再清 transform 会出现小抖动）：
+                   - opacity/transform 让 main 立即回到可见位置（子元素由 CSS 默认 opacity:0 隐藏，稍后由 sequential loader 逐个 .loaded）
+                   - pointer-events 必须清掉，否则 main 内部的所有链接都会被穿透到 body，变成点不开 */
+                mainAfter.style.transition = 'none';
+                mainAfter.style.opacity = '';
+                mainAfter.style.transform = '';
+                mainAfter.style.pointerEvents = '';
+                requestAnimationFrame(function () {
+                    mainAfter.style.transition = '';
+                });
+
+                /* 滚动：若 href 带 #hash 且新页面里能找到对应元素，滚到它；否则回顶 */
+                var scrolled = false;
+                if (hrefURL.hash) {
+                    var tid;
+                    try { tid = decodeURIComponent(hrefURL.hash.slice(1)); }
+                    catch (_) { tid = hrefURL.hash.slice(1); }  /* 畸形编码就直接用原文 */
+                    var target = tid ? document.getElementById(tid) : null;
+                    if (!target) {
+                        try { target = document.querySelector(hrefURL.hash); } catch (_) { /* 非法选择器就算了 */ }
+                    }
+                    if (target) {
+                        target.scrollIntoView({ block: 'start' });
+                        scrolled = true;
+                    }
+                }
+                if (!scrolled) window.scrollTo(0, 0);
+
+                /* 重新初始化 header / progress / TOC / back-top */
+                initPage();
+
+                /* 触发 spa:loaded：sequential loader 会监听并逐个给子元素加 .loaded，复现原始入场动画 */
+                document.dispatchEvent(new CustomEvent('spa:loaded', { detail: { href: href } }));
+
+                isNavigating = false;
+            }).catch(function () {
+                /* 失败兜底：直接硬跳 */
+                window.location.href = href;
+            });
+        }
+
+        /* 拦截点击 */
+        document.addEventListener('click', function (e) {
+            if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+            var a = e.target.closest && e.target.closest('a');
+            if (!isInternal(a)) return;
+
+            var u = new URL(a.href);
+            /* 同路径锚点 → 不拦截（让浏览器跳锚） */
+            if (u.pathname === location.pathname && u.hash) return;
+
+            e.preventDefault();
+            navigate(a.href, true);
+        }, true);
+
+        /* 浏览器前进/后退：仅在 pathname 真的变化时才走 SPA，
+           否则只是 hash 变动（如 Fancybox 关闭、锚点跳转）会误触发重新加载 */
+        window.addEventListener('popstate', function () {
+            if (location.pathname === lastPath) return;
+            lastPath = location.pathname;
+            navigate(location.href, false);
+        });
+
+        /* 首屏初始化 */
+        initPage();
+    })();
 </script>
 
-<!-- Cloudflare Web Analytics --><script defer src='/assets/cf/beacon.min.js' data-cf-beacon='{"token": "4eac4be4bba34ee4bb1b601864ee28f6"}'></script><!-- End Cloudflare Web Analytics -->
+<!-- Cloudflare Web Analytics -->
+<script defer src='/assets/cf/beacon.min.js' data-cf-beacon='{"token": "4eac4be4bba34ee4bb1b601864ee28f6"}'></script>
+<!-- End Cloudflare Web Analytics -->
