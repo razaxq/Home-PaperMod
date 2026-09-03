@@ -68,13 +68,13 @@ html, body { overflow-x: clip; overflow-y: visible; }
 
 
 /* ══════════════════════════════════════════════════════
-   Back-top 按钮（左下圆形浮动）
+   Back-top 按钮（右下圆形浮动）
 ══════════════════════════════════════════════════════ */
 .top-link {
     position: fixed !important;
     bottom: 24px !important;
-    left: 24px !important;
-    right: auto !important;
+    left: auto !important;
+    right: 24px !important;
     top: auto !important;
     width: 42px !important;
     height: 42px !important;
